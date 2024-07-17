@@ -1,0 +1,4 @@
+fastapi==0.111.1
+python-jose==3.3.0
+python-dotenv==1.0.1
+fastapi-jwt==0.3.0
