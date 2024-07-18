@@ -6,6 +6,8 @@ load_dotenv()
 
 JWT_SECRET = environ['JWT_SECRET']
 
+SECRET_KEY = environ['SECRET_KEY']
+
 TORTOISE_CONFIG = {
     "connections": {
         "test_task": {
@@ -17,6 +19,6 @@ TORTOISE_CONFIG = {
         }
     },
     "apps": {
-        "test_task": {"models": ["models"], "default_connection": "test_task"}
+        "api": {"models": ["models"], "default_connection": "test_task"}
     }
 }

@@ -4,12 +4,7 @@ from config import TORTOISE_CONFIG
 from models import Rank, RankName
 
 
-async def init(app: FastAPI):
-    register_tortoise(app=app,
-                      config=TORTOISE_CONFIG,
-                      generate_schemas=True,
-                      add_exception_handlers=True)
-
+async def init_db():
     ranks = await Rank.all()
 
     if not ranks:
@@ -26,7 +21,7 @@ async def init(app: FastAPI):
             Rank(name=RankName.cardinal, press_force=4, max_energy=6000, energy_per_sec=2),
             Rank(name=RankName.patriarch, press_force=5, max_energy=7000, energy_per_sec=2),
             Rank(name=RankName.master, press_force=6, max_energy=8000, energy_per_sec=2),
-            Rank(name=RankName.pope, press_force=12, max_energy=10000, energy_per_sec=3),
+            # Rank(name=RankName.pope, press_force=12, max_energy=10000, energy_per_sec=3),
         ]
 
         await Rank.bulk_create(ranks_list)
