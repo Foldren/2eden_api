@@ -1,10 +1,10 @@
 from datetime import timedelta, datetime
+from math import floor
 from traceback import print_exc
-
 from cryptography.fernet import Fernet
 from fastapi import FastAPI, Security
-from fastapi_jwt import JwtAuthorizationCredentials, JwtRefreshBearer, JwtAccessBearerCookie
-from tortoise import run_async
+from fastapi_jwt import JwtAuthorizationCredentials, JwtAccessBearerCookie, JwtRefreshBearerCookie
+from pytz import timezone
 from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from config import JWT_SECRET, SECRET_KEY, TORTOISE_CONFIG
@@ -18,6 +18,8 @@ register_tortoise(app=app,
                   generate_schemas=True,
                   add_exception_handlers=True)
 
+app.add_event_handler("startup", init_db)
+
 # Read access token from bearer header and cookie (bearer priority)
 access_security = JwtAccessBearerCookie(
     secret_key=JWT_SECRET,
@@ -25,7 +27,7 @@ access_security = JwtAccessBearerCookie(
     access_expires_delta=timedelta(minutes=15))  # change access token validation timedelta
 
 # Read refresh token from bearer header only
-refresh_security = JwtRefreshBearer(
+refresh_security = JwtRefreshBearerCookie(
     secret_key=JWT_SECRET,
     auto_error=True,  # automatically raise HTTPException: HTTP_401_UNAUTHORIZED
     access_expires_delta=timedelta(days=90))
@@ -35,10 +37,12 @@ refresh_security = JwtRefreshBearer(
 @app.post("/auth/register")
 async def registration(chat_id: int, token: str, country: str):
     try:
-        stats = await Stats.create()
-        activity = await Activity.create()
         encrypt_token = Fernet(SECRET_KEY).encrypt(token.encode())
-        user = await User.create(chat_id=chat_id, country=country, stats=stats, activity=activity, token=encrypt_token)
+        user = await User.create(chat_id=chat_id, country=country, token=encrypt_token, rank_id=1)
+
+        await Stats.create(user_id=user.id)
+        await Activity.create(user_id=user.id)
+
     except Exception:
         print_exc()
         return {"message": "Пользователь уже зарегистрирован."}
@@ -80,11 +84,10 @@ async def refresh(credentials: JwtAuthorizationCredentials = Security(refresh_se
 # Энергия и монеты -----------------------------------------------------------------------------------------------------
 
 @app.post("/user/sync_game")
-async def sync_game(clicks: int, credentials: JwtAuthorizationCredentials = Security(access_security)):
+async def sync_clicks(clicks: int, credentials: JwtAuthorizationCredentials = Security(access_security)):
     """
-    Метод синхронизации кликов с монетами. Механически 2 пальцами можно делать около 10 кликов в секунду = 600 кликов
-    в минуту, соответственно ставим ограничение на запрос - 1 минута для пользователя, 600 кликов. Метод срабатывает раз
-    в минуту, пока пользователь в меню кликов.
+    Метод синхронизации кликов. Сколько бы кликов не отправили, все обрезается энергией, на счету у
+    пользователя и дневными ограничениями.
     :param clicks: число кликов
     :param credentials: authorization headers
     :return:
@@ -93,67 +96,72 @@ async def sync_game(clicks: int, credentials: JwtAuthorizationCredentials = Secu
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("rank", "stats", "activity").first()
 
-    if user.activity.last_time_sync > (datetime.now() + timedelta(minutes=1)):
-        return {"message": "Рановато для синхрона."}
+    if user.stats.energy < user.rank.press_force:
+        return {"message": "Не хватает энергии."}
 
-    user.activity.last_time_sync = datetime.now()
-    await user.activity.save()
+    extraction = clicks * user.rank.press_force
 
-    if clicks > 600:
-        return {"message": "Уупс, кажется ddos."}
+    if extraction > user.stats.energy:  # Обрезаем энергию под количество доступных кликов ^^
+        extraction = floor(user.stats.energy / user.rank.press_force) * user.rank.press_force
 
-    # В случае если все окей -------------------------------------------------------------------------------------------
-    if clicks > user.stats.energy:
-        clicks = user.stats.energy
+    if (user.stats.earned_day_coins + extraction) > user.rank.max_extr_day_click:  # Проверяем дневной лимит
+        extraction = user.rank.max_extr_day_click - user.stats.earned_day_coins
 
-    user.stats.coins += clicks * user.rank.press_force
-    user.stats.energy -= clicks
+    if extraction == 0:
+        return {"message": "Достигнут дневной лимит добычи кликами."}
+
+    user.stats.earned_day_coins += extraction
+    user.stats.coins += extraction
+    user.stats.energy -= extraction
+
     await user.stats.save()
 
     return {"message": "Синхронизация завершена."}
 
 
 @app.post("/user/bonus/inspiration")
-async def use_inspiration_boost(credentials: JwtAuthorizationCredentials = Security(refresh_security)):
+async def sync_inspiration_boost_clicks(clicks: int, credentials: JwtAuthorizationCredentials = Security(access_security)):
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
-
-    if user.rank.id < 1:
-        return {"message": "Сперва нужно повысить ранг."}
 
     if user.stats.inspirations == 0:
         return {"message": "На счету кончились бустеры вдохновения."}
 
-    if user.activity.last_time_use_inspiration < (user.activity.last_time_use_inspiration + timedelta(seconds=15)):
+    if user.activity.allowed_time_use_inspiration > datetime.now(tz=timezone("Europe/Moscow")):
         return {"message": "Вдохновение уже активно, дождитесь завершения."}
 
-    user.activity.last_time_use_inspiration = datetime.now()
+    extraction = clicks * (user.rank.press_force * 3)
+
+    if extraction > user.rank.max_extr_day_inspiration:
+        extraction = user.rank.max_extr_day_inspiration
+
+    user.activity.allowed_time_use_inspiration = datetime.now(tz=timezone("Europe/Moscow")) + timedelta(seconds=15)
     await user.activity.save()
 
     user.stats.inspirations -= 1
+    user.stats.coins += extraction
     await user.stats.save()
 
     return {"message": "Вдохновение активировано."}
 
 
-@app.post("/user/bonus/inspiration")
-async def use_surge_of_energy_boost(credentials: JwtAuthorizationCredentials = Security(refresh_security)):
+@app.post("/user/bonus/replenishment")
+async def use_replenishment_boost(credentials: JwtAuthorizationCredentials = Security(access_security)):
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("stats", "rank").first()
 
-    if user.rank.id < 2:
-        return {"message": "Сперва нужно повысить ранг."}
-
-    if user.stats.surge_energies == 0:
+    if user.stats.replenishments == 0:
         return {"message": "На счету кончились бустеры прилива."}
 
+    if user.stats.energy == user.rank.max_energy:
+        return {"message": "У вас максимум энергии."}
+
     user.stats.energy = user.rank.max_energy
-    user.stats.surge_energies -= 1
+    user.stats.replenishments -= 1
     await user.stats.save()
 
-    return {"message": "Вдохновение активировано."}
+    return {"message": "Прилив энергии активирован."}
 
 
 if __name__ == "__main__":
-    # run(init_db())
     run("app:app", reload=True)

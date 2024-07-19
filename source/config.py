@@ -1,7 +1,6 @@
 from os import environ
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 JWT_SECRET = environ['JWT_SECRET']
@@ -10,7 +9,7 @@ SECRET_KEY = environ['SECRET_KEY']
 
 TORTOISE_CONFIG = {
     "connections": {
-        "test_task": {
+        "api": {
             "engine": "tortoise.backends.sqlite",
             "credentials": {
                 "file_path": ".test.db",
@@ -19,6 +18,8 @@ TORTOISE_CONFIG = {
         }
     },
     "apps": {
-        "api": {"models": ["models"], "default_connection": "test_task"}
-    }
+        "api": {"models": ["models"], "default_connection": "api"}
+    },
+    'use_tz': True,
+    'timezone': 'Europe/Moscow'
 }
