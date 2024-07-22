@@ -1,24 +1,10 @@
 from datetime import datetime, timedelta
-from enum import Enum
 from pytz import timezone
 from tortoise import Model
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, BinaryField, \
-    OneToOneRelation, ReverseRelation, FloatField
-
-
-class RankName(str, Enum):
-    acolyte = "Acolyte"
-    deacon = "Deacon"
-    priest = "Priest"
-    archdeacon = "Archdeacon"
-    bishop = "Bishop"
-    archbishop = "Archbishop"
-    metropolitan = "Metropolitan"
-    cardinal = "Cardinal"
-    patriarch = "Patriarch"
-    master = "Master"
-    pope = "Pope"
+    OneToOneRelation, ReverseRelation, FloatField, BooleanField
+from components.enums import RankName, RewardTypeName
 
 
 # В системе изначально создаются все 10 рангов
@@ -56,7 +42,11 @@ class Activity(Model):
     user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="activity")
     registration_date = DateField(default=datetime.now())  # -
     last_login_date = DateField(default=datetime.now())  # -
-    allowed_time_use_inspiration = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow"))-timedelta(days=1)))
+    last_get_daily_reward_date = DateField(null=True)
+    allowed_time_use_inspiration = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
+    time_end_mining = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
+    is_active_mining = BooleanField(default=False)
+    active_days = BigIntField(default=1)
 
     class Meta:
         table = "activities"
@@ -71,6 +61,19 @@ class Stats(Model):
     invited_friends = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
+    week_extr_coins = BigIntField(default=0)
 
     class Meta:
         table = "stats"
+
+
+class Reward(Model):
+    id = BigIntField(pk=True)
+    type_name = CharEnumField(enum_type=RewardTypeName, default=RankName.acolyte, description='Награда')
+    user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
+    amount = BigIntField(default=0)
+    inspirations = BigIntField(default=0)
+    replenishments = BigIntField(default=0)
+
+    class Meta:
+        table = "rewards"
