@@ -3,21 +3,26 @@ from fastapi import APIRouter
 from fastapi import Security
 from fastapi_jwt import JwtAuthorizationCredentials
 
-from components.tools import get_daily_reward
+from components.tools import get_daily_reward, get_referral_reward
 from config import SECRET_KEY, REFRESH_SECURITY, ACCESS_SECURITY
-from models import User, Stats, Activity
+from models import User, Stats, Activity, Referral
 
 router = APIRouter()
 
 
 @router.post("/auth/register")
-async def registration(chat_id: int, token: str, country: str):
+async def registration(chat_id: int, token: str, country: str, referral_code: str = ""):
     try:
         encrypt_token = Fernet(SECRET_KEY).encrypt(token.encode())
         user = await User.create(chat_id=chat_id, country=country, token=encrypt_token, rank_id=1)
 
         await Stats.create(user_id=user.id)
         await Activity.create(user_id=user.id)
+
+        if referral_code:
+            await get_referral_reward(user.id, referral_code)
+
+        await get_daily_reward(user.id)  # получаем ежедневную награду за вход
 
     except Exception:
         return {"message": "Пользователь уже зарегистрирован."}
@@ -33,10 +38,10 @@ async def registration(chat_id: int, token: str, country: str):
 @router.post("/auth/login")
 async def login(chat_id: int, token: str):
     user = await User.filter(chat_id=chat_id).select_related("activity").first()
-    encrypt_token = Fernet(SECRET_KEY).encrypt(token.encode())
+    decrypt_token = Fernet(SECRET_KEY).decrypt(user.token).decode("utf-8")
 
     if user:
-        if user.token == encrypt_token:
+        if decrypt_token == token:
             payload = {"id": user.id}
             await get_daily_reward(user.id)  # получаем ежедневную награду за вход
             access_token = ACCESS_SECURITY.create_access_token(subject=payload)

@@ -3,7 +3,7 @@ from pytz import timezone
 from tortoise import Model
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, BinaryField, \
-    OneToOneRelation, ReverseRelation, FloatField, BooleanField
+    OneToOneRelation, ReverseRelation, FloatField, BooleanField, OneToOneNullableRelation
 from components.enums import RankName, RewardTypeName
 
 
@@ -29,6 +29,9 @@ class User(Model):
     rank = ForeignKeyField(model_name="api.Rank", on_delete=OnDelete.CASCADE, related_name="users", default=1)
     stats: OneToOneRelation["Stats"]
     activity: OneToOneRelation["Activity"]
+    rewards: ReverseRelation["Reward"]
+    leads: ReverseRelation["Referral"]
+    referrer: OneToOneNullableRelation["Referral"]
     chat_id = BigIntField(index=True)
     token = BinaryField()
     country = CharField(max_length=50)  # -
@@ -42,11 +45,11 @@ class Activity(Model):
     user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="activity")
     registration_date = DateField(default=datetime.now())  # -
     last_login_date = DateField(default=datetime.now())  # -
-    last_get_daily_reward_date = DateField(null=True)
+    last_get_daily_reward_date = DateField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=35)))
     allowed_time_use_inspiration = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
     time_end_mining = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
     is_active_mining = BooleanField(default=False)
-    active_days = BigIntField(default=1)
+    active_days = BigIntField(default=0)
 
     class Meta:
         table = "activities"
@@ -77,3 +80,13 @@ class Reward(Model):
 
     class Meta:
         table = "rewards"
+
+
+class Referral(Model):
+    id = BigIntField(pk=True)
+    referrer = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="leads")
+    lead = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="referrer")
+    code = CharField(max_length=40)
+
+    class Meta:
+        table = "referrals"
