@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
+from uuid import uuid4
 from pytz import timezone
 from tortoise import Model
+from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, BinaryField, \
-    OneToOneRelation, ReverseRelation, FloatField, BooleanField, OneToOneNullableRelation
+    OneToOneRelation, ReverseRelation, FloatField, BooleanField
 from components.enums import RankName, RewardTypeName
 
 
-# В системе изначально создаются все 10 рангов
-class Rank(Model):
+class Rank(Model):  # В системе изначально создаются все 10 рангов
     id = BigIntField(pk=True)
     users: ReverseRelation["User"]
     league = BigIntField()
@@ -27,17 +28,21 @@ class Rank(Model):
 class User(Model):
     id = BigIntField(pk=True)
     rank = ForeignKeyField(model_name="api.Rank", on_delete=OnDelete.CASCADE, related_name="users", default=1)
+    referrer = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="leads", null=True)
+    leads: ReverseRelation["User"]
     stats: OneToOneRelation["Stats"]
     activity: OneToOneRelation["Activity"]
     rewards: ReverseRelation["Reward"]
-    leads: ReverseRelation["Referral"]
-    referrer: OneToOneNullableRelation["Referral"]
-    chat_id = BigIntField(index=True)
+    chat_id = BigIntField(index=True, unique=True)
     token = BinaryField()
     country = CharField(max_length=50)  # -
+    referral_code = CharField(max_length=36, default=uuid4(), unique=True)
 
     class Meta:
         table = "users"
+
+    class PydanticMeta:
+        exclude = ("token",)
 
 
 class Activity(Model):
@@ -61,6 +66,7 @@ class Stats(Model):
     coins = BigIntField(default=1000)
     energy = BigIntField(default=2000)
     earned_day_coins = BigIntField(default=0)
+    earned_week_coins = BigIntField(default=0)
     invited_friends = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
@@ -68,6 +74,10 @@ class Stats(Model):
 
     class Meta:
         table = "stats"
+
+
+Stats_Pydantic = pydantic_model_creator(Stats, name="Stats")
+Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList")
 
 
 class Reward(Model):
@@ -82,11 +92,5 @@ class Reward(Model):
         table = "rewards"
 
 
-class Referral(Model):
-    id = BigIntField(pk=True)
-    referrer = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="leads")
-    lead = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="referrer")
-    code = CharField(max_length=40)
-
-    class Meta:
-        table = "referrals"
+Reward_Pydantic = pydantic_model_creator(Reward, name="Reward")
+Reward_Pydantic_List = pydantic_queryset_creator(Reward, name="Rewards")

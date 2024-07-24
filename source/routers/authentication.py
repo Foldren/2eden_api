@@ -2,15 +2,14 @@ from cryptography.fernet import Fernet
 from fastapi import APIRouter
 from fastapi import Security
 from fastapi_jwt import JwtAuthorizationCredentials
-
 from components.tools import get_daily_reward, get_referral_reward
 from config import SECRET_KEY, REFRESH_SECURITY, ACCESS_SECURITY
-from models import User, Stats, Activity, Referral
+from models import User, Stats, Activity
 
 router = APIRouter()
 
 
-@router.post("/auth/register")
+@router.post("/auth/registration")
 async def registration(chat_id: int, token: str, country: str, referral_code: str = ""):
     try:
         encrypt_token = Fernet(SECRET_KEY).encrypt(token.encode())
@@ -20,7 +19,7 @@ async def registration(chat_id: int, token: str, country: str, referral_code: st
         await Activity.create(user_id=user.id)
 
         if referral_code:
-            await get_referral_reward(user.id, referral_code)
+            await get_referral_reward(user, referral_code)
 
         await get_daily_reward(user.id)  # получаем ежедневную награду за вход
 

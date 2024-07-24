@@ -10,7 +10,7 @@ from models import User
 router = APIRouter()
 
 
-@router.post("/user/sync_game")
+@router.post("/user/sync_clicks")
 async def sync_clicks(clicks: int, credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
     """
     Метод синхронизации кликов. Сколько бы кликов не отправили, все обрезается энергией, на счету у
@@ -46,7 +46,7 @@ async def sync_clicks(clicks: int, credentials: JwtAuthorizationCredentials = Se
     return {"message": "Синхронизация завершена."}
 
 
-@router.post("/user/bonus/inspiration")
+@router.post("/user/bonus/sync_inspiration_clicks")
 async def sync_inspiration_boost_clicks(clicks: int,
                                         credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
