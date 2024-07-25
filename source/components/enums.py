@@ -19,3 +19,4 @@ class RewardTypeName(str, Enum):
     launches_series = "launches_series"
     invite_friends = "invite_friends"
     leaderboard = "leaderboard"
+    task = "task"

@@ -17,9 +17,7 @@ class Rank(Model):  # В системе изначально создаются 
     press_force = FloatField()
     max_energy = FloatField()
     energy_per_sec = FloatField()
-    max_extr_day_click = BigIntField()
-    max_extr_day_maining = BigIntField()
-    max_extr_day_inspiration = BigIntField()
+    price = BigIntField()
 
     class Meta:
         table = "ranks"
@@ -48,11 +46,12 @@ class User(Model):
 class Activity(Model):
     id = BigIntField(pk=True)
     user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="activity")
-    registration_date = DateField(default=datetime.now())  # -
-    last_login_date = DateField(default=datetime.now())  # -
-    last_get_daily_reward_date = DateField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=35)))
-    allowed_time_use_inspiration = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
-    time_end_mining = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
+    reg_date = DateField(default=datetime.now())  # -
+    last_login_date = DateField(default=datetime.now())
+    last_daily_reward = DateField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=35)))
+    last_sync_energy = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow"))))
+    next_inspiration = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
+    next_mining = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
     is_active_mining = BooleanField(default=False)
     active_days = BigIntField(default=0)
 
@@ -65,25 +64,23 @@ class Stats(Model):
     user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="stats")
     coins = BigIntField(default=1000)
     energy = BigIntField(default=2000)
-    earned_day_coins = BigIntField(default=0)
     earned_week_coins = BigIntField(default=0)
     invited_friends = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
-    week_extr_coins = BigIntField(default=0)
 
     class Meta:
         table = "stats"
 
 
 Stats_Pydantic = pydantic_model_creator(Stats, name="Stats")
-Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList")
+Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList", include=('user_id', 'coins',))
 
 
 class Reward(Model):
     id = BigIntField(pk=True)
-    type_name = CharEnumField(enum_type=RewardTypeName, default=RankName.acolyte, description='Награда')
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
+    type_name = CharEnumField(enum_type=RewardTypeName, default=RankName.acolyte, description='Награда')
     amount = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
@@ -93,4 +90,4 @@ class Reward(Model):
 
 
 Reward_Pydantic = pydantic_model_creator(Reward, name="Reward")
-Reward_Pydantic_List = pydantic_queryset_creator(Reward, name="Rewards")
+Reward_Pydantic_List = pydantic_queryset_creator(Reward, name="RewardList")
