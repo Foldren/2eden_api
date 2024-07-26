@@ -3,7 +3,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from config import TORTOISE_CONFIG
 from init_db import init_db
-from routers import authentication, synchronization, mining, rewarding, leaderboard
+from routers import authentication, synchronization, mining, rewarding, leaderboard, tasks
 
 app = FastAPI()
 
@@ -19,6 +19,7 @@ app.include_router(synchronization.router)
 app.include_router(mining.router)
 app.include_router(rewarding.router)
 app.include_router(leaderboard.router)
+app.include_router(tasks.router)
 
 
 if __name__ == "__main__":

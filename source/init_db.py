@@ -1,6 +1,8 @@
 from tortoise.functions import Sum
 
-from models import Rank, RankName, User
+from models import Rank, RankName, User, Task, Condition, TgChannelCondition, VisitLinkCondition, UserTask, Reward, \
+    InstantReward, Visibility, AllwaysVisibility, RankVisibility
+from components.enums import VisibilityType, ConditionType
 
 
 async def init_db() -> None:
@@ -51,3 +53,30 @@ async def init_db() -> None:
         ]
 
         await Rank.bulk_create(ranks_list)
+
+    # create tasks
+    tasks = await Task.all()
+
+    if not tasks:
+        # Создаем условие для задачи
+        condition_link = await Condition.create(type=ConditionType.VISIT_LINK)
+        await VisitLinkCondition.create(condition=condition_link, url='https://www.google.com/search?q=2eden')
+
+        # Создаем условие видимости для задачи
+        visibility = await Visibility.create(type=VisibilityType.RANK)
+        await RankVisibility.create(visibility=visibility, rank=await Rank.get(name=RankName.acolyte))
+
+        # Создаем награду для задачи
+        reward = await InstantReward.create(tokens=1000)
+
+        # Создаем задачу с условием
+        await Task.create(
+            description='Изучи информацию о нашем проекте и получи награду!',
+            reward=reward,
+            condition=condition_link,
+            visibility=visibility
+        )
+
+
+
+

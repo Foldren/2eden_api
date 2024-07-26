@@ -6,7 +6,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, BinaryField, \
     OneToOneRelation, ReverseRelation, FloatField, BooleanField
-from components.enums import RankName, RewardTypeName
+from components.enums import RankName, RewardTypeName, VisibilityType, ConditionType
 
 
 class Rank(Model):  # В системе изначально создаются все 10 рангов
@@ -87,6 +87,74 @@ class Reward(Model):
 
     class Meta:
         table = "rewards"
+
+
+# ------ Условия выполнения задач ------
+class Condition(Model):
+    id = BigIntField(pk=True)
+    type = CharEnumField(enum_type=ConditionType, max_length=50)
+
+
+class TgChannelCondition(Model):
+    id = BigIntField(pk=True)
+    condition = OneToOneField('api.Condition', related_name='tg_channel_condition')
+    channel_id = CharField(max_length=100)  # ID телеграмм канала для подписки
+
+
+class VisitLinkCondition(Model):
+    id = BigIntField(pk=True)
+    condition = OneToOneField('api.Condition', related_name='visit_link_condition')
+    url = CharField(max_length=200)  # URL для посещения
+
+
+# ------ Конец условий выполнения задач ------
+
+# ------ Условия видимости задач ------
+class Visibility(Model):
+    id = BigIntField(pk=True)
+    type = CharEnumField(enum_type=VisibilityType, max_length=50)
+
+
+class AllwaysVisibility(Model):
+    id = BigIntField(pk=True)
+    visibility = OneToOneField('api.Visibility', related_name='allways_visibility')
+
+
+class RankVisibility(Model):
+    id = BigIntField(pk=True)
+    visibility = OneToOneField('api.Visibility', related_name='rank_visibility')
+    rank = ForeignKeyField('api.Rank', on_delete=OnDelete.CASCADE, related_name='rank_visibilities')
+
+
+# ------ Конец условий видимости задач ------
+
+class InstantReward(Model):
+    id = BigIntField(pk=True)
+    tokens = BigIntField(default=0)
+    inspirations = BigIntField(default=0)
+    replenishments = BigIntField(default=0)
+
+
+# Задачи приложения
+class Task(Model):
+    id = BigIntField(pk=True)
+    description = CharField(max_length=200)  # Название задачи
+    reward = OneToOneField('api.InstantReward', related_name='tasks')
+    condition = OneToOneField('api.Condition', related_name='tasks')  # Условие выполнения
+    visibility = OneToOneField('api.Visibility', related_name='tasks')  # Условие видимости
+
+
+# Задача, которую берет пользователь
+class UserTask(Model):
+    id = BigIntField(pk=True)
+    user = ForeignKeyField('api.User', on_delete=OnDelete.CASCADE, related_name='user_tasks')  # ID пользователя
+    task = ForeignKeyField('api.Task', on_delete=OnDelete.CASCADE, related_name='user_tasks')  # Связь с задачей
+    create_time = DatetimeField(auto_now_add=True)  # Время создания
+    completed_time = DatetimeField(null=True)  # Время выполнения (может быть пустым)
+
+    @property
+    def is_completed(self):
+        return self.completed_time is not None
 
 
 Reward_Pydantic = pydantic_model_creator(Reward, name="Reward")
