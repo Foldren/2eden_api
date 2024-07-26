@@ -28,7 +28,7 @@ async def sync_clicks(clicks: int, credentials: JwtAuth = Security(ACCESS_SECURI
     await sync_energy(user)
 
     if user.stats.energy < user.rank.press_force:
-        return CustomJSONResponse(error="Не хватает энергии.",
+        return CustomJSONResponse(message="Не хватает энергии.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     extraction = clicks * user.rank.press_force
@@ -62,15 +62,15 @@ async def sync_inspiration_boost_clicks(clicks: int,
     await sync_energy(user)
 
     if user.rank.id < 2:
-        return CustomJSONResponse(error="Маловат ранг.",
+        return CustomJSONResponse(message="Маловат ранг.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     if user.stats.inspirations == 0:
-        return CustomJSONResponse(error="На счету кончились бустеры вдохновения.",
+        return CustomJSONResponse(message="На счету кончились бустеры вдохновения.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     if user.activity.next_inspiration > datetime.now(tz=timezone("Europe/Moscow")):
-        return CustomJSONResponse(error="Вдохновение уже активно, дождитесь завершения.",
+        return CustomJSONResponse(message="Вдохновение уже активно, дождитесь завершения.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     extraction = clicks * (user.rank.press_force * 3)
@@ -99,15 +99,15 @@ async def use_replenishment_boost(credentials: JwtAuth = Security(ACCESS_SECURIT
     user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
 
     if user.rank.id < 3:
-        return CustomJSONResponse(error="Маловат ранг.",
+        return CustomJSONResponse(message="Маловат ранг.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     if user.stats.replenishments == 0:
-        return CustomJSONResponse(error="На счету кончились бустеры прилива.",
+        return CustomJSONResponse(message="На счету кончились бустеры прилива.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     if user.stats.energy == user.rank.max_energy:
-        return CustomJSONResponse(error="У вас максимум энергии.",
+        return CustomJSONResponse(message="У вас максимум энергии.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     user.stats.energy = user.rank.max_energy

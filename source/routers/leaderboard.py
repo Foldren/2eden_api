@@ -2,9 +2,8 @@ from fastapi import Security, APIRouter
 from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
 from components.responses import CustomJSONResponse
-from components.tools import pydantic_from_queryset
 from config import ACCESS_SECURITY
-from models import Stats, Stats_Pydantic_List, User, Rank
+from models import Stats, User, Rank
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -16,10 +15,14 @@ async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> C
     :param credentials: authorization headers
     :return:
     """
-    query_set = Stats.all().order_by('earned_week_coins').limit(50)
-    stats_pydantic_list = await pydantic_from_queryset(pydantic_model=Stats_Pydantic_List, qs=query_set)
+    users_stats = (await Stats.all()
+                   .order_by('earned_week_coins')
+                   .limit(50)
+                   .select_related("user").values(id="user__id", coins="earned_week_coins"))
 
-    return CustomJSONResponse(data={"leaders": stats_pydantic_list})
+    users_stats.reverse()
+
+    return CustomJSONResponse(data={"leaders": users_stats})
 
 
 @router.patch("/promote")
@@ -33,13 +36,13 @@ async def update_rank(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Custo
     user = await User.filter(id=user_id).select_related("stats", "rank").first()
 
     if user.rank.id == 20:
-        return CustomJSONResponse(error="У вас максимальный ранг.",
+        return CustomJSONResponse(message="У вас максимальный ранг.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     next_rank = await Rank.filter(id=(user.rank.id + 1)).first()
 
     if user.stats.coins < next_rank.price:
-        return CustomJSONResponse(error="Не хватает монет для повышения.",
+        return CustomJSONResponse(message="Не хватает монет для повышения.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     user.stats.coins -= next_rank.price

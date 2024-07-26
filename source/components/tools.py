@@ -124,26 +124,26 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
         await Reward.create(user_id=referrer_upper_id, type_name=enums.RewardTypeName.REFERRAL, amount=income_1_perc)
 
 
-async def pydantic_from_queryset(pydantic_model: PydanticListModel, qs: QuerySet) -> tuple[dict[str, Any]]:
-    """
-    Функция для преобразования запроса QuerySet в tuple[dict]. Для преобразования 1+? записей из бд.
-    :param pydantic_model: Pydantic модель бд
-    :param qs: QuerySet к бд
-    :return:
-    """
-    from_qs = await pydantic_model.from_queryset(qs)
-    return from_qs.model_dump()
-
-
-async def pydantic_from_model(pydantic_model: PydanticModel, orm_model: Model) -> dict[str, Any]:
-    """
-    Функция для преобразования ORM модели в dict. Для преобразования одной записи из бд.
-    :param pydantic_model: Pydantic модель бд
-    :param orm_model: ORM модель бд
-    :return:
-    """
-    from_orm = await pydantic_model.from_tortoise_orm(orm_model)
-    return from_orm.model_dump()
+# async def pydantic_from_queryset(pydantic_model: PydanticListModel, qs: QuerySet) -> tuple[dict[str, Any]]:
+#     """
+#     Функция для преобразования запроса QuerySet в tuple[dict]. Для преобразования 1+? записей из бд.
+#     :param pydantic_model: Pydantic модель бд
+#     :param qs: QuerySet к бд
+#     :return:
+#     """
+#     from_qs = await pydantic_model.from_queryset(qs)
+#     return from_qs.model_dump()
+#
+#
+# async def pydantic_from_model(pydantic_model: PydanticModel, orm_model: Model) -> dict[str, Any]:
+#     """
+#     Функция для преобразования ORM модели в dict. Для преобразования одной записи из бд.
+#     :param pydantic_model: Pydantic модель бд
+#     :param orm_model: ORM модель бд
+#     :return:
+#     """
+#     from_orm = await pydantic_model.from_tortoise_orm(orm_model)
+#     return from_orm.model_dump()
 
 
 async def sync_energy(user: User) -> None:

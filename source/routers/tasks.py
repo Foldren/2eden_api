@@ -45,16 +45,16 @@ async def take_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURIT
     try:
         task = await Task.get(id=task_id)
     except DoesNotExist:
-        return CustomJSONResponse(error="Такой задачи не существует.",
-                                  status_code=status.HTTP_204_NO_CONTENT)
+        return CustomJSONResponse(message="Такой задачи не существует.",
+                                  status_code=status.HTTP_404_NOT_FOUND)
 
     if not check_task_visibility(task, user):
-        return CustomJSONResponse(error="Задача недоступна.",
+        return CustomJSONResponse(message="Задача недоступна.",
                                   status_code=status.HTTP_423_LOCKED)
 
     user_task, created = await UserTask.get_or_create(user=user, task=task)
     if not created:
-        return CustomJSONResponse(error="Задача уже взята.",
+        return CustomJSONResponse(message="Задача уже взята.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     return CustomJSONResponse(message="Задача взята.",
@@ -76,11 +76,11 @@ async def complete_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SEC
     try:
         user_task = await UserTask.get(user=user, task_id=task_id).select_related("task__condition", "task__reward")
     except DoesNotExist:
-        return CustomJSONResponse(error="Задача пользователя не найдена.",
+        return CustomJSONResponse(message="Задача пользователя не найдена.",
                                   status_code=status.HTTP_404_NOT_FOUND)
 
     if user_task.is_completed:
-        return CustomJSONResponse(error="Задача уже завершена.",
+        return CustomJSONResponse(message="Задача уже завершена.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     task = user_task.task
@@ -93,7 +93,7 @@ async def complete_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SEC
     elif condition.type == ConditionType.TG_CHANNEL:
         tg_condition = await TgChannelCondition.get(condition=condition)
         # todo: проверка подписки на канал
-        return CustomJSONResponse(error="Not implemented yet.",
+        return CustomJSONResponse(message="Not implemented yet.",
                                   status_code=status.HTTP_409_CONFLICT)
 
     # Установка флага выполнения задания

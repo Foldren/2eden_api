@@ -74,7 +74,7 @@ class Stats(Model):
 
 
 Stats_Pydantic = pydantic_model_creator(Stats, name="Stats")
-Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList", include=('user_id', 'coins',))
+Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList")
 
 
 class Reward(Model):

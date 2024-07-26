@@ -37,7 +37,7 @@ async def registration(chat_id: int, token: str, country: str, referral_code: st
         await get_daily_reward(user.id)  # получаем ежедневную награду за вход
 
     except IntegrityError:
-        return CustomJSONResponse(error="Пользователь уже зарегистрирован.",
+        return CustomJSONResponse(message="Пользователь уже зарегистрирован.",
                                   status_code=status.HTTP_208_ALREADY_REPORTED)
 
     payload = {"id": user.id}
@@ -59,13 +59,13 @@ async def login(chat_id: int, token: str) -> CustomJSONResponse:
     user = await User.filter(chat_id=chat_id).select_related("activity", "stats", "rank").first()
 
     if not user:
-        return CustomJSONResponse(error="Не вижу такого пользователя.",
+        return CustomJSONResponse(message="Не вижу такого пользователя.",
                                   status_code=status.HTTP_404_NOT_FOUND)
 
     decrypt_token = Fernet(SECRET_KEY).decrypt(user.token).decode("utf-8")
 
     if decrypt_token != token:
-        return CustomJSONResponse(error="Уупс, токен неверный.",
+        return CustomJSONResponse(message="Уупс, токен неверный.",
                                   status_code=status.HTTP_400_BAD_REQUEST)
 
     payload = {"id": user.id}
