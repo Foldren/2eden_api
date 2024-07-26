@@ -12,6 +12,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
     Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю)
+    earned_week_coins обнуляется и начисляет награды в воскресенье в таск менеджере (отдельный сервис).
     :param credentials: authorization headers
     :return:
     """

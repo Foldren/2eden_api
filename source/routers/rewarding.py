@@ -45,6 +45,7 @@ async def get_reward(reward_id: int,
         user_stats.coins += reward.amount
         user_stats.inspirations += reward.inspirations
         user_stats.replenishments += reward.replenishments
+        user_stats.earned_week_coins += reward.amount
 
         await user_stats.save()
         await reward.delete()

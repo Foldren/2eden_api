@@ -38,6 +38,7 @@ async def sync_clicks(clicks: int, credentials: JwtAuth = Security(ACCESS_SECURI
 
     user.stats.coins += extraction
     user.stats.energy -= extraction
+    user.stats.earned_week_coins += extraction
 
     await user.stats.save()  # добавить синхронизацию энергии по времени синхронизации кликов
     # (добавить также в авторизацию)
@@ -83,6 +84,7 @@ async def sync_inspiration_boost_clicks(clicks: int,
 
     user.stats.inspirations -= 1
     user.stats.coins += extraction
+    user.stats.earned_week_coins += extraction
     await user.stats.save()
 
     return CustomJSONResponse(message="Вдохновение активировано.")

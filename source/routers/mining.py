@@ -37,7 +37,7 @@ async def start_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Cust
     user.activity.is_active_mining = True
     await user.activity.save()
 
-    return CustomJSONResponse(success_msg="Майнинг активирован.",
+    return CustomJSONResponse(message="Майнинг активирован.",
                               data={"max_extraction": user.rank.max_energy},
                               status_code=status.HTTP_202_ACCEPTED)
 
@@ -71,6 +71,7 @@ async def end_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Custom
     await send_referral_mining_reward(referrer_id=user.referrer_id, extraction=user.rank.max_energy)
 
     user.stats.coins += user.rank.max_energy
+    user.stats.earned_week_coins += user.rank.max_energy
 
     await user.stats.save()
 
