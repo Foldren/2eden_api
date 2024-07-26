@@ -1,13 +1,15 @@
 from datetime import timedelta, datetime
 from typing import Any
+from fastapi.responses import ORJSONResponse
 from pytz import timezone
-from starlette.responses import JSONResponse
 from tortoise import Model
 from tortoise.contrib.pydantic import PydanticListModel, PydanticModel
 from tortoise.queryset import QuerySet
 from components import enums
-from config import ACCESS_SECURITY, REFRESH_SECURITY
-from models import User, Reward
+from components.enums import VisibilityType
+from components.responses import CustomJSONResponse
+from config import REFRESH_SECURITY, ACCESS_SECURITY
+from models import User, Reward, Task, RankVisibility
 
 
 async def get_daily_reward(user_id: str) -> None:
@@ -31,26 +33,26 @@ async def get_daily_reward(user_id: str) -> None:
 
         match user.activity.active_days:
             case 1:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=500)
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=500)
             case 2:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=1000)
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000)
             case 3:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=1000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000,
                                     inspirations=1)
             case 4:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=1000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000,
                                     inspirations=1, replenishments=1)
             case 5:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=1000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000,
                                     inspirations=2, replenishments=1)
             case 6:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=5000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=5000,
                                     inspirations=2, replenishments=2)
             case 7:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=10000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=10000,
                                     inspirations=2, replenishments=2)
             case _:
-                await Reward.create(type_name=enums.RewardTypeName.launches_series, user_id=user_id, amount=10000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=10000,
                                     inspirations=2, replenishments=2)
 
     if timedelta(days=2) <= time_d_after_login:
@@ -77,13 +79,49 @@ async def get_referral_reward(lead: User, referral_code: str) -> None:
 
         match referrer.stats.invited_friends:
             case 1:
-                await Reward.create(type_name=enums.RewardTypeName.invite_friends, user_id=referrer.id, amount=2000)
+                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=2000)
             case 5:
-                await Reward.create(type_name=enums.RewardTypeName.invite_friends, user_id=referrer.id, amount=5000)
+                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=5000)
             case 100:
-                await Reward.create(type_name=enums.RewardTypeName.invite_friends, user_id=referrer.id, amount=50000)
+                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=50000)
             case 1000:
-                await Reward.create(type_name=enums.RewardTypeName.invite_friends, user_id=referrer.id, amount=250000)
+                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=250000)
+
+
+async def send_referral_mining_reward(extraction: int, referrer_id: int = None) -> None:
+    """
+    Отправка процентов с добычи по майнингу реферреру.
+    :param referrer_id: айди реферрера
+    :param extraction: добыча с майнинга реферала
+    """
+
+    # Если нет реферрера то не выполняем
+    if referrer_id is None:
+        return
+
+    referrer_rw = await Reward.filter(user_id=referrer_id, type_name=enums.RewardTypeName.REFERRAL).first()
+    income_5_perc = int(extraction * 0.05)
+
+    if referrer_rw:
+        referrer_rw.amount += income_5_perc
+        await referrer_rw.save()
+    else:
+        await Reward.create(user_id=referrer_id, type_name=enums.RewardTypeName.REFERRAL, amount=income_5_perc)
+
+    referrer_upper_id = (await User.filter(id=referrer_id).values_list('referrer_id', flat=True))[0]
+
+    # Если у реферрера нет реферрера то не выполняем
+    if referrer_upper_id is None:
+        return
+
+    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type_name=enums.RewardTypeName.REFERRAL).first()
+    income_1_perc = int(extraction * 0.01)
+
+    if referrer_upper_rw:
+        referrer_upper_rw.amount += income_1_perc
+        await referrer_upper_rw.save()
+    else:
+        await Reward.create(user_id=referrer_upper_id, type_name=enums.RewardTypeName.REFERRAL, amount=income_1_perc)
 
 
 async def pydantic_from_queryset(pydantic_model: PydanticListModel, qs: QuerySet) -> tuple[dict[str, Any]]:
@@ -129,13 +167,33 @@ async def sync_energy(user: User) -> None:
     await user.activity.save()
 
 
-# async def get_jwt_response(content: Any, payload: dict) -> JSONResponse:
-#     access_token = ACCESS_SECURITY.create_access_token(subject=payload)
-#     refresh_token = REFRESH_SECURITY.create_refresh_token(subject=payload)
-#
-#     response = JSONResponse(content=content)
-#
-#     ACCESS_SECURITY.set_access_cookie(response, access_token)
-#     REFRESH_SECURITY.set_refresh_cookie(response, refresh_token)
-#
-#     return response
+async def check_task_visibility(task: Task, user: User):
+    if task.visibility.type == VisibilityType.RANK:
+        rank_visibility = await RankVisibility.get(visibility=task.visibility)
+        return user.rank.league >= rank_visibility.rank.league
+
+    elif task.visibility.type == VisibilityType.ALLWAYS:
+        return True
+
+    return False
+
+
+async def get_jwt_cookie_response(payload: dict[str, Any], status_code: int,
+                                  message: str | None = None) -> CustomJSONResponse:
+    """
+    Функция для генерции JSONResponse с куками (access, refresh tokens).
+    :param payload: payload для токена
+    :param status_code: статус код
+    :param message: сообщение на вывод
+    :return:
+    """
+    access_token = ACCESS_SECURITY.create_access_token(subject=payload)
+    refresh_token = REFRESH_SECURITY.create_refresh_token(subject=payload)
+
+    data = {"access_token": access_token, "refresh_token": refresh_token}
+    response = CustomJSONResponse(message=message, data=data, status_code=status_code)
+
+    ACCESS_SECURITY.set_access_cookie(response, access_token)
+    REFRESH_SECURITY.set_refresh_cookie(response, refresh_token)
+
+    return response

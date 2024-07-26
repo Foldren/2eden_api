@@ -3,7 +3,9 @@ python-jose==3.3.0
 python-dotenv==1.0.1
 fastapi-jwt==0.3.0
 uvicorn~=0.30.3
-pytz~=2024.1
+pytz~=2023.3.post1
 starlette~=0.37.2
-tortoise~=0.1.1
-tortoise-orm
+tortoise-orm~=0.21.5
+ujson~=5.10.0
+gunicorn~=22.0.0
+cryptography~=42.0.8

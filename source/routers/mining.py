@@ -1,19 +1,20 @@
 from datetime import timedelta, datetime
 from fastapi import Security, APIRouter
-from fastapi_jwt import JwtAuthorizationCredentials
+from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
-from tortoise.functions import Sum
-
+from starlette import status
+from components.responses import CustomJSONResponse
+from components.tools import send_referral_mining_reward
 from config import ACCESS_SECURITY
 from models import User
 
-router = APIRouter()
+router = APIRouter(prefix="/mining", tags=["Mining"])
 
 
-@router.post("/mining/start")
-async def start_mining(credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
+@router.post("/start")
+async def start_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
-    Метод для начала майнинга. Изменяет время старта.
+    Эндпойнт для начала майнинга. Изменяет время старта.
     :param credentials: authorization headers
     :return:
     """
@@ -21,25 +22,30 @@ async def start_mining(credentials: JwtAuthorizationCredentials = Security(ACCES
     user = await User.filter(id=user_id).select_related("rank", "activity").first()
 
     if user.rank.id < 4:
-        return {"message": "Маловат ранг."}
+        return CustomJSONResponse(error="Маловат ранг.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     if datetime.now(tz=timezone("Europe/Moscow")) < user.activity.next_mining:
-        return {"message": "Майнинг уже активен."}
+        return CustomJSONResponse(error="Майнинг уже активен.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     if user.activity.is_active_mining:
-        return {"message": "Сперва заберите награду."}
+        return CustomJSONResponse(error="Сперва заберите награду.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     user.activity.next_mining = datetime.now(tz=timezone("Europe/Moscow")) + timedelta(minutes=1)
     user.activity.is_active_mining = True
     await user.activity.save()
 
-    return {"message": "Майнинг активирован.", "data": {"max_extraction": user.rank.max_energy}}
+    return CustomJSONResponse(message="Майнинг активирован.",
+                              data={"max_extraction": user.rank.max_energy},
+                              status_code=status.HTTP_202_ACCEPTED)
 
 
-@router.post("/mining/claim")
-async def end_mining(credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
+@router.post("/claim")
+async def end_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
-    Метод для окончания майнинга.
+    Эндпойнт для окончания майнинга.
     :param credentials: authorization headers
     :return:
     """
@@ -47,33 +53,27 @@ async def end_mining(credentials: JwtAuthorizationCredentials = Security(ACCESS_
     user = await User.filter(id=user_id).select_related("stats", "rank", "activity").first()
 
     if user.rank.id < 4:
-        return {"message": "Маловат ранг."}
+        return CustomJSONResponse(error="Маловат ранг.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     if datetime.now(tz=timezone("Europe/Moscow")) < user.activity.next_mining:
-        return {"message": "Майнинг еще не завершен."}
+        return CustomJSONResponse(error="Майнинг еще не завершен.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     if not user.activity.is_active_mining:
-        return {"message": "Сперва начните майнинг."}
+        return CustomJSONResponse(error="Сперва начните майнинг.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     user.activity.is_active_mining = False
     await user.activity.save()
 
-    referals_5_perc = await (User.filter(referrer_id=1)
-                             .select_related("rank")
-                             .values_list("rank__max_energy", "id"))
+    # Обновляем награду реферерров за майнинг реферала
+    await send_referral_mining_reward(referrer_id=user.referrer_id, extraction=user.rank.max_energy)
 
-    referals_5_perc_energ = [e[0] for e in referals_5_perc]
-
-    referals_5_perc_ids = [e[1] for e in referals_5_perc]
-
-    referals_1_perc_energ = await (User.filter(referrer_id__in=referals_5_perc_ids)
-                                   .select_related("rank")
-                                   .values_list("rank__max_energy", flat=True))
-
-    user.stats.coins += user.rank.max_energy + int(sum(referals_5_perc_energ) * 0.05) + \
-                        int(sum(referals_1_perc_energ) * 0.01)
-    # максимум можно заработать max_energy + добыча от рефералов
+    user.stats.coins += user.rank.max_energy
 
     await user.stats.save()
 
-    return {"message": "Майнинг завершен.", "data": {"max_extraction": user.rank.max_energy}}
+    return CustomJSONResponse(message="Майнинг завершен.",
+                              data={"max_extraction": user.rank.max_energy},
+                              status_code=status.HTTP_202_ACCEPTED)

@@ -1,44 +1,38 @@
-from datetime import timedelta, datetime
+from datetime import datetime
 from fastapi import Security, APIRouter
-from fastapi_jwt import JwtAuthorizationCredentials
+from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
+from starlette import status
 from tortoise.exceptions import DoesNotExist
-from tortoise.functions import Sum
-
+from components.enums import ConditionType
+from components.responses import CustomJSONResponse
+from components.tools import check_task_visibility
 from config import ACCESS_SECURITY
-import models
+from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask
 
-from components.enums import VisibilityType, ConditionType
-
-router = APIRouter()
+router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-async def check_task_visibility(task: models.Task, user: models.User):
-    if task.visibility.type == VisibilityType.RANK:
-        rank_visibility = await models.RankVisibility.get(visibility=task.visibility)
-        return user.rank.league >= rank_visibility.rank.league
-    elif task.visibility.type == VisibilityType.ALL:
-        return True
-    return False
-
-
-@router.get("/tasks/available")
-async def get_tasks(credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
+@router.get("/available")
+async def get_tasks(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
     Метод для получения списка доступных задач.
     :param credentials: authorization headers
     :return:
     """
+    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user = await User.filter(id=user_id).select_related("rank").first()
+
     # фильтрация по условию доступности
-    all_tasks = await models.Task.all()
-    filtered_tasks = [task for task in all_tasks if check_task_visibility(task, credentials.subject)]
+    all_tasks = await Task.all()
+    filtered_tasks = [task for task in all_tasks if check_task_visibility(task, user)]
     # по выполненным задачам не фильтруем
     # todo: выводить более полезную информацию о задачах, а не просто айдишники
-    return {"tasks": filtered_tasks}
+    return CustomJSONResponse(data={"tasks": filtered_tasks})
 
 
-@router.post("/tasks/start/{task_id}")
-async def take_task(task_id: int, credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
+@router.post("/start/{task_id}")
+async def take_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURITY)):
     """
     Метод для начала Таска. Создает для пользователя задачу для выполнения.
     :param credentials: authorization headers
@@ -46,25 +40,30 @@ async def take_task(task_id: int, credentials: JwtAuthorizationCredentials = Sec
     :return:
     """
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
-    user = await models.User.filter(id=user_id).select_related("rank", "activity").first()
+    user = await User.filter(id=user_id).select_related("rank", "activity").first()
 
     try:
-        task = await models.Task.get(id=task_id)
+        task = await Task.get(id=task_id)
     except DoesNotExist:
-        return {"message": "Такой задачи не существует."}
+        return CustomJSONResponse(error="Такой задачи не существует.",
+                                  status_code=status.HTTP_204_NO_CONTENT)
 
     if not check_task_visibility(task, user):
-        return {"message": "Задача недоступна."}
+        return CustomJSONResponse(error="Задача недоступна.",
+                                  status_code=status.HTTP_423_LOCKED)
 
-    user_task, created = await models.UserTask.get_or_create(user=user, task=task)
+    user_task, created = await UserTask.get_or_create(user=user, task=task)
     if not created:
-        return {"message": "Задача уже взята."}
+        return CustomJSONResponse(error="Задача уже взята.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
-    return {"message": "Задача взята.", "data": {"task": task}}
+    return CustomJSONResponse(message="Задача взята.",
+                              data={"task": task},
+                              status_code=status.HTTP_201_CREATED)
 
 
-@router.post("/tasks/complete/{task_id}")
-async def complete_task(task_id: int, credentials: JwtAuthorizationCredentials = Security(ACCESS_SECURITY)):
+@router.post("/complete/{task_id}")
+async def complete_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURITY)):
     """
     Метод для завершения задачи. Отмечает задачу как выполненную.
     :param credentials: authorization headers
@@ -72,27 +71,30 @@ async def complete_task(task_id: int, credentials: JwtAuthorizationCredentials =
     :return:
     """
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
-    user = await models.User.filter(id=user_id).select_related("rank", "activity", "stats").first()
+    user = await User.filter(id=user_id).select_related("rank", "activity", "stats").first()
 
     try:
-        user_task = await models.UserTask.get(user=user, task_id=task_id).select_related("task__condition", "task__reward")
+        user_task = await UserTask.get(user=user, task_id=task_id).select_related("task__condition", "task__reward")
     except DoesNotExist:
-        return {"message": "Задача пользователя не найдена."}
+        return CustomJSONResponse(error="Задача пользователя не найдена.",
+                                  status_code=status.HTTP_404_NOT_FOUND)
 
     if user_task.is_completed:
-        return {"message": "Задача уже завершена."}
+        return CustomJSONResponse(error="Задача уже завершена.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     task = user_task.task
     condition = task.condition
 
     if condition.type == ConditionType.VISIT_LINK:
         # Проверять условие посещения не нужно, т.к. это происходит на фронте
-        reach_condition = await models.VisitLinkCondition.get(condition=condition)
+        reach_condition = await VisitLinkCondition.get(condition=condition)
         pass
     elif condition.type == ConditionType.TG_CHANNEL:
-        tg_condition = await models.TgChannelCondition.get(condition=condition)
+        tg_condition = await TgChannelCondition.get(condition=condition)
         # todo: проверка подписки на канал
-        return {"message": "Not implemented yet."}
+        return CustomJSONResponse(error="Not implemented yet.",
+                                  status_code=status.HTTP_409_CONFLICT)
 
     # Установка флага выполнения задания
     user_task.completed_time = datetime.now(tz=timezone("Europe/Moscow"))
@@ -104,4 +106,6 @@ async def complete_task(task_id: int, credentials: JwtAuthorizationCredentials =
     await user_task.save()
     await user.stats.save()
 
-    return {"message": "Задача завершена.", "data": {"task": task, "reward": task.reward}}
+    return CustomJSONResponse(message="Задача завершена.",
+                              data={"task": task, "reward": task.reward},
+                              status_code=status.HTTP_202_ACCEPTED)

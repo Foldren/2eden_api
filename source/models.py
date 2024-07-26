@@ -13,7 +13,7 @@ class Rank(Model):  # В системе изначально создаются 
     id = BigIntField(pk=True)
     users: ReverseRelation["User"]
     league = BigIntField()
-    name = CharEnumField(enum_type=RankName, default=RankName.acolyte, description='Ранг')
+    name = CharEnumField(enum_type=RankName, default=RankName.ACOLYTE, description='Ранг')
     press_force = FloatField()
     max_energy = FloatField()
     energy_per_sec = FloatField()
@@ -80,7 +80,7 @@ Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList", include
 class Reward(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
-    type_name = CharEnumField(enum_type=RewardTypeName, default=RankName.acolyte, description='Награда')
+    type_name = CharEnumField(enum_type=RewardTypeName, default=RankName.ACOLYTE, description='Награда')
     amount = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
@@ -153,7 +153,7 @@ class UserTask(Model):
     completed_time = DatetimeField(null=True)  # Время выполнения (может быть пустым)
 
     @property
-    def is_completed(self):
+    def is_completed(self):  # todo: не задействованный метод
         return self.completed_time is not None
 
 

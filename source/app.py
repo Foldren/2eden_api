@@ -1,11 +1,12 @@
 from fastapi import FastAPI
+from fastapi.responses import UJSONResponse
 from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from config import TORTOISE_CONFIG
 from init_db import init_db
 from routers import authentication, synchronization, mining, rewarding, leaderboard, tasks
 
-app = FastAPI()
+app = FastAPI(default_response_class=UJSONResponse)
 
 register_tortoise(app=app,
                   config=TORTOISE_CONFIG,
@@ -23,4 +24,4 @@ app.include_router(tasks.router)
 
 
 if __name__ == "__main__":
-    run("app:app", reload=True)
+    run("app:app", reload=True)  # guvicorn

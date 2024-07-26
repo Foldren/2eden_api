@@ -2,24 +2,25 @@ from enum import Enum
 
 
 class RankName(str, Enum):
-    acolyte = "Acolyte"
-    deacon = "Deacon"
-    priest = "Priest"
-    archdeacon = "Archdeacon"
-    bishop = "Bishop"
-    archbishop = "Archbishop"
-    metropolitan = "Metropolitan"
-    cardinal = "Cardinal"
-    patriarch = "Patriarch"
-    master = "Master"
-    pope = "Pope"
+    ACOLYTE = "Acolyte"
+    DEACON = "Deacon"
+    PRIEST = "Priest"
+    ARCHDEACON = "Archdeacon"
+    BISHOP = "Bishop"
+    ARCHBISHOP = "Archbishop"
+    METROPOLITAN = "Metropolitan"
+    CARDINAL = "Cardinal"
+    PATRIARCH = "Patriarch"
+    MASTER = "Master"
+    POPE = "Pope"
 
 
 class RewardTypeName(str, Enum):
-    launches_series = "launches_series"
-    invite_friends = "invite_friends"
-    leaderboard = "leaderboard"
-    task = "task"
+    LAUNCHES_SERIES = "launches_series"
+    INVITE_FRIENDS = "invite_friends"
+    LEADERBOARD = "leaderboard"
+    TASK = "task"
+    REFERRAL = "referral"
 
 
 # Перечисление для типов условий выполнения задач
