@@ -7,7 +7,7 @@ from starlette import status
 from components.responses import CustomJSONResponse
 from components.tools import sync_energy
 from config import ACCESS_SECURITY
-from models import User
+from db_models.api import User, User_Pydantic
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -40,8 +40,7 @@ async def sync_clicks(clicks: int, credentials: JwtAuth = Security(ACCESS_SECURI
     user.stats.energy -= extraction
     user.stats.earned_week_coins += extraction
 
-    await user.stats.save()  # добавить синхронизацию энергии по времени синхронизации кликов
-    # (добавить также в авторизацию)
+    await user.stats.save()
 
     return CustomJSONResponse(message="Синхронизация завершена.")
 
@@ -117,3 +116,22 @@ async def use_replenishment_boost(credentials: JwtAuth = Security(ACCESS_SECURIT
     await user.stats.save()
 
     return CustomJSONResponse(message="Прилив энергии активирован.")
+
+
+@router.get("/profile")
+async def get_user_profile(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+    """
+    Эндпойнт на получение данных игрока.
+    :param credentials: authorization headers
+    :return:
+    """
+    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user = await User.filter(id=user_id).prefetch_related("activity", "stats", "rank", "leads",
+                                                        "rewards", "leader_place").first()
+
+    from_orm = await User_Pydantic.from_tortoise_orm(user)
+    user_dump = from_orm.model_dump(mode='json')  # Мод как решение проблемы с сериализацией даты
+
+    return CustomJSONResponse(data=user_dump)
+
+

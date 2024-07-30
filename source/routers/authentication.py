@@ -7,7 +7,7 @@ from tortoise.exceptions import IntegrityError
 from components.responses import CustomJSONResponse
 from components.tools import get_daily_reward, get_referral_reward, sync_energy, get_jwt_cookie_response
 from config import SECRET_KEY, REFRESH_SECURITY
-from models import User, Stats, Activity
+from db_models.api import User, Stats, Activity
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

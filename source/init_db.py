@@ -1,5 +1,7 @@
+from tortoise import Tortoise
+
 from components.enums import VisibilityType, ConditionType
-from models import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, RankVisibility
+from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, RankVisibility
 
 
 async def init_db() -> None:

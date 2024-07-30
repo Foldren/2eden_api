@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
 from pytz import timezone
-from tortoise import Model
+from tortoise import Model, Tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, BinaryField, \
@@ -31,6 +31,7 @@ class User(Model):
     stats: OneToOneRelation["Stats"]
     activity: OneToOneRelation["Activity"]
     rewards: ReverseRelation["Reward"]
+    leader_place: OneToOneRelation["Leader"]
     chat_id = BigIntField(index=True, unique=True)
     token = BinaryField()
     country = CharField(max_length=50)  # -
@@ -40,7 +41,7 @@ class User(Model):
         table = "users"
 
     class PydanticMeta:
-        exclude = ("token",)
+        exclude = ("token", "leads")
 
 
 class Activity(Model):
@@ -73,10 +74,6 @@ class Stats(Model):
         table = "stats"
 
 
-Stats_Pydantic = pydantic_model_creator(Stats, name="Stats")
-Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList")
-
-
 class Reward(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
@@ -87,6 +84,15 @@ class Reward(Model):
 
     class Meta:
         table = "rewards"
+
+
+class Leader(Model):
+    place = BigIntField(pk=True)
+    user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="leader_place")
+    earned_week_coins = BigIntField(default=0)
+
+    class Meta:
+        table = "leaders"
 
 
 # ------ Условия выполнения задач ------
@@ -157,5 +163,13 @@ class UserTask(Model):
         return self.completed_time is not None
 
 
-Reward_Pydantic = pydantic_model_creator(Reward, name="Reward")
-Reward_Pydantic_List = pydantic_queryset_creator(Reward, name="RewardList")
+Tortoise.init_models(["db_models.api"], "api")
+
+User_Pydantic = pydantic_model_creator(User, name="User")
+User_Pydantic_List = pydantic_queryset_creator(User, name="UserList")
+
+# Reward_Pydantic = pydantic_model_creator(Reward, name="Reward")
+# Reward_Pydantic_List = pydantic_queryset_creator(Reward, name="RewardList")
+#
+# Stats_Pydantic = pydantic_model_creator(Stats, name="Stats")
+# Stats_Pydantic_List = pydantic_queryset_creator(Stats, name="StatsList")

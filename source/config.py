@@ -20,7 +20,7 @@ TORTOISE_CONFIG = {
         }
     },
     "apps": {
-        "api": {"models": ["models"], "default_connection": "api"}
+        "api": {"models": ["db_models.api"], "default_connection": "api"}
     },
     'use_tz': True,
     'timezone': 'Europe/Moscow'

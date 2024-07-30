@@ -1,15 +1,11 @@
 from datetime import timedelta, datetime
 from typing import Any
-from fastapi.responses import ORJSONResponse
 from pytz import timezone
-from tortoise import Model
-from tortoise.contrib.pydantic import PydanticListModel, PydanticModel
-from tortoise.queryset import QuerySet
 from components import enums
 from components.enums import VisibilityType
 from components.responses import CustomJSONResponse
 from config import REFRESH_SECURITY, ACCESS_SECURITY
-from models import User, Reward, Task, RankVisibility
+from db_models.api import User, Reward, Task, RankVisibility
 
 
 async def get_daily_reward(user_id: str) -> None:

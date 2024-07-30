@@ -3,7 +3,7 @@ from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
 from components.responses import CustomJSONResponse
 from config import ACCESS_SECURITY
-from models import Stats, User, Rank
+from db_models.api import Stats, User, Rank
 
 router = APIRouter(prefix="/user", tags=["User"])
 

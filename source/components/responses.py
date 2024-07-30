@@ -1,9 +1,10 @@
 from typing import Any
 from fastapi.responses import UJSONResponse
+from fastapi import Response
 
 
 class CustomJSONResponse(UJSONResponse):
-    def __init__(self, data: dict[str, Any] | None = None, message: str = "", status_code: int = 200):
+    def __init__(self, data: dict[str, Any] | None = None, message: str = "", status_code: int = 200) -> None:
         """
         Класс над ujson, либо в data указываем данные +- message, либо в message - сообщение.
         :param data: данные респонса
