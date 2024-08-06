@@ -1,4 +1,5 @@
 from fastapi import Security, APIRouter
+from fastapi_cache.decorator import cache
 from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
 from components.responses import CustomJSONResponse
@@ -9,6 +10,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 
 
 @router.get("/leaderboard")
+@cache(expire=30)
 async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
     Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю)

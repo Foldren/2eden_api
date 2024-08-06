@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 from math import floor
 from fastapi import Security, APIRouter
+from fastapi_cache.decorator import cache
 from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
 from starlette import status
@@ -119,6 +120,7 @@ async def use_replenishment_boost(credentials: JwtAuth = Security(ACCESS_SECURIT
 
 
 @router.get("/profile")
+@cache(expire=30)
 async def get_user_profile(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
     Эндпойнт на получение данных игрока.

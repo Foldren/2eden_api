@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import Security, APIRouter
+from fastapi_cache.decorator import cache
 from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
 from starlette import status
@@ -14,6 +15,7 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
 @router.get("/available")
+@cache(expire=30)
 async def get_tasks(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
     """
     Метод для получения списка доступных задач.

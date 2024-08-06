@@ -9,6 +9,8 @@ JWT_SECRET = environ['JWT_SECRET']
 
 SECRET_KEY = environ['SECRET_KEY']
 
+REDIS_URL = environ['REDIS_URL']
+
 TORTOISE_CONFIG = {
     "connections": {
         "api": {

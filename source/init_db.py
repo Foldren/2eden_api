@@ -1,12 +1,29 @@
-from tortoise import Tortoise
-
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from redis.asyncio import from_url
+from components.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
+from config import REDIS_URL
 from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, RankVisibility
 
 
+async def init_cache() -> None:
+    """
+    Функция инициализации кеша.
+    """
+    redis = await from_url(REDIS_URL, db=10, encoding="utf-8", decode_responses=False)
+    FastAPICache.init(backend=RedisBackend(redis), prefix="fastapi-cache", coder=UJsonCoder)
+
+
 async def init_db() -> None:
+    """
+    Функция инициализации SQL дб, Redis, выполнение миграций.
+    """
+    await init_cache()  # инициализируем кеш
+
     ranks = await Rank.all()
 
+    # Создаем ранги
     if not ranks:
         ranks_list = [
             Rank(name=RankName.ACOLYTE, league=1, press_force=4, max_energy=2000,
@@ -75,7 +92,3 @@ async def init_db() -> None:
             condition=condition_link,
             visibility=visibility
         )
-
-
-
-
