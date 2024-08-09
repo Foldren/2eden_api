@@ -39,3 +39,11 @@ REFRESH_SECURITY = JwtRefreshBearerCookie(
     secret_key=JWT_SECRET,
     auto_error=True,  # automatically raise HTTPException: HTTP_401_UNAUTHORIZED
     access_expires_delta=timedelta(days=90))
+
+ADMIN_NAME = environ['ADMIN_NAME']
+
+ADMIN_HASH_PASSWORD = environ['ADMIN_HASH_PASSWORD']
+
+ADMIN_SECRET_KEY = environ['ADMIN_SECRET_KEY']
+
+ADMIN_MW_SECRET_KEY = environ['ADMIN_MW_SECRET_KEY']

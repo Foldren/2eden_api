@@ -1,6 +1,5 @@
 from typing import Any
 from fastapi.responses import UJSONResponse
-from fastapi import Response
 
 
 class CustomJSONResponse(UJSONResponse):

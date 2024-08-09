@@ -3,8 +3,9 @@ from fastapi_cache.backends.redis import RedisBackend
 from redis.asyncio import from_url
 from components.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
-from config import REDIS_URL
-from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, RankVisibility
+from config import REDIS_URL, ADMIN_HASH_PASSWORD, ADMIN_NAME
+from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, \
+    RankVisibility, Admin
 
 
 async def init_cache() -> None:
@@ -15,15 +16,19 @@ async def init_cache() -> None:
     FastAPICache.init(backend=RedisBackend(redis), prefix="fastapi-cache", coder=UJsonCoder)
 
 
-async def init_db() -> None:
+async def create_necessary_db_objects() -> None:
     """
-    Функция инициализации SQL дб, Redis, выполнение миграций.
+    Функция для создания необходимых для работы записей в бд.
     """
-    await init_cache()  # инициализируем кеш
+    # Создание суперадмина ---------------------------------------------------------------------------------------------
+    admin = await Admin.first()
 
+    if not admin:  # todo Убрать -> c_aM8x3jGrJdBMOMHTc-xBp6hp0b-g
+        await Admin.create(username=ADMIN_NAME, password=ADMIN_HASH_PASSWORD, is_superuser=True)
+
+    # Создание рангов --------------------------------------------------------------------------------------------------
     ranks = await Rank.all()
 
-    # Создаем ранги
     if not ranks:
         ranks_list = [
             Rank(name=RankName.ACOLYTE, league=1, press_force=4, max_energy=2000,
@@ -70,7 +75,7 @@ async def init_db() -> None:
 
         await Rank.bulk_create(ranks_list)
 
-    # create tasks
+    # Создание тасков --------------------------------------------------------------------------------------------------
     tasks = await Task.all()
 
     if not tasks:
@@ -92,3 +97,11 @@ async def init_db() -> None:
             condition=condition_link,
             visibility=visibility
         )
+
+
+async def init() -> None:
+    """
+    Функция инициализации SQL дб, Redis, Admin, выполнение миграций.
+    """
+    await init_cache()  # инициализируем кеш
+    await create_necessary_db_objects()  # создаем записи бд при необходимости
