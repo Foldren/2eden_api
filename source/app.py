@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from starlette.middleware import Middleware
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import RedirectResponse
 from starlette_admin import BaseAdmin, DropDown
@@ -14,8 +15,7 @@ from init import init
 from routers import authentication, synchronization, mining, rewarding, leaderboard, tasks
 
 # Используемые базы данных Redis
-# db9 - Кеш fastapi_cache
-# db10 - Админка fastapi_admin
+# db10 - Кеш fastapi_cache
 
 app = FastAPI(default_response_class=UJSONResponse, docs_url="/swagger")
 
@@ -24,6 +24,14 @@ register_tortoise(app=app,
                   config=TORTOISE_CONFIG,
                   generate_schemas=True,
                   add_exception_handlers=True)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["POST", "GET", "PUT", "DELETE", "PATCH"],
+    allow_headers=["Authorization"],
+)
 
 # Инициализируем все
 app.add_event_handler("startup", init)
