@@ -18,15 +18,14 @@ async def get_reward_list(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> C
     :return:
     """
     user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    rewards_values = await (Reward.filter(user_id=user_id)
+                            .values("id", "type_name", "amount", "inspirations", "replenishments"))
 
-    try:
-        rewards_values = await (Reward.filter(user_id=user_id)
-                                .values("id", "type_name", "amount", "inspirations", "replenishments"))
-    except Exception:
+    if not rewards_values:
         return CustomJSONResponse(message="Вознаграждений 0.",
                                   status_code=status.HTTP_404_NOT_FOUND)
 
-    return CustomJSONResponse(data={"rewards": rewards_values})
+    return CustomJSONResponse(data={"rewards": rewards_values}, message="Выведен список вознаграждений.")
 
 
 @router.post("")

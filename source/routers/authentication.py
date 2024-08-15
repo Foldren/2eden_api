@@ -93,6 +93,7 @@ async def refresh(credentials: JwtAuthorizationCredentials = Security(REFRESH_SE
     await get_daily_reward(user_id)  # получаем ежедневную награду за вход
     await sync_energy(user)  # синхронизируем энергию
 
-    response = await get_jwt_cookie_response(payload=payload,
+    response = await get_jwt_cookie_response(message="Токен обновлен!",
+                                             payload=payload,
                                              status_code=status.HTTP_200_OK)
     return response

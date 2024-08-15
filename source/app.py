@@ -17,7 +17,7 @@ from routers import authentication, synchronization, mining, rewarding, leaderbo
 # db9 - Кеш fastapi_cache
 # db10 - Админка fastapi_admin
 
-app = FastAPI(default_response_class=UJSONResponse)
+app = FastAPI(default_response_class=UJSONResponse, docs_url="/swagger")
 
 # Подключаем Tortoise ORM
 register_tortoise(app=app,

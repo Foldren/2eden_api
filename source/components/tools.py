@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 from typing import Any
+from httpx import Response
 from pytz import timezone
 from components import enums
 from components.enums import VisibilityType
@@ -147,11 +148,10 @@ async def sync_energy(user: User) -> None:
     Функция для синхронизации энергии. Обновляет дату синхронизации и меняет кол-во энергии.
     :param user: объект модели User с включенными: activity, stats, rank
     """
-    dt_last_sync_energy = datetime.fromisoformat(user.activity.last_sync_energy.isoformat()).replace(
-        tzinfo=timezone("Europe/Moscow"))
+    dt_last_sync_energy = datetime.fromisoformat(user.activity.last_sync_energy.isoformat())
     secs_from_last_sync = (datetime.now(tz=timezone("Europe/Moscow")) - dt_last_sync_energy).seconds
 
-    accumulated_energy = secs_from_last_sync * user.rank.energy_per_sec
+    accumulated_energy = max(secs_from_last_sync, 1) * user.rank.energy_per_sec
     user.stats.energy += accumulated_energy
 
     if user.stats.energy > user.rank.max_energy:
@@ -193,3 +193,14 @@ async def get_jwt_cookie_response(payload: dict[str, Any], status_code: int,
     REFRESH_SECURITY.set_refresh_cookie(response, refresh_token)
 
     return response
+
+
+async def assert_status_code(response: Response, status_code: int) -> None:
+    """
+    Функция для быстрой генерации assert по status code, для тестов.
+    :param response: httpx.Response
+    :param status_code: Starlette.status
+    """
+    frmt_text = f"[Message: {response.json()["message"]["text"]}]"
+    assert response.status_code == status_code, frmt_text
+    print(frmt_text)

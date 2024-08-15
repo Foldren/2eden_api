@@ -108,7 +108,7 @@ async def use_replenishment_boost(credentials: JwtAuth = Security(ACCESS_SECURIT
         return CustomJSONResponse(message="На счету кончились бустеры прилива.",
                                   status_code=status.HTTP_409_CONFLICT)
 
-    if user.stats.energy == user.rank.max_energy:
+    if user.stats.energy >= user.rank.max_energy:
         return CustomJSONResponse(message="У вас максимум энергии.",
                                   status_code=status.HTTP_409_CONFLICT)
 
@@ -134,6 +134,6 @@ async def get_user_profile(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> 
     from_orm = await User_Pydantic.from_tortoise_orm(user)
     user_dump = from_orm.model_dump(mode='json')  # Мод как решение проблемы с сериализацией даты
 
-    return CustomJSONResponse(data=user_dump)
+    return CustomJSONResponse(data=user_dump, message="Выведены данные профиля.")
 
 

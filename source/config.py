@@ -2,6 +2,7 @@ from datetime import timedelta
 from os import environ
 from dotenv import load_dotenv
 from fastapi_jwt import JwtRefreshBearerCookie, JwtAccessBearerCookie
+from tortoise import generate_config
 
 load_dotenv()
 
@@ -11,18 +12,21 @@ SECRET_KEY = environ['SECRET_KEY']
 
 REDIS_URL = environ['REDIS_URL']
 
+API_PG_URL = environ['API_PG_URL']
+
 TORTOISE_CONFIG = {
     "connections": {
-        "api": {
+        "api": API_PG_URL,
+        "test": {
             "engine": "tortoise.backends.sqlite",
             "credentials": {
-                "file_path": ".test.db",
+                "file_path": "test.db",
                 "foreign_keys": "ON",
-            },
+            }
         }
     },
     "apps": {
-        "api": {"models": ["db_models.api"], "default_connection": "api"}
+        "api": {"models": ["db_models.api"], "default_connection": "api"},
     },
     'use_tz': True,
     'timezone': 'Europe/Moscow'

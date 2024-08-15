@@ -53,7 +53,7 @@ class User(Model):
     chat_id = BigIntField(index=True, unique=True)
     token = BinaryField()
     country = CharField(max_length=50)  # -
-    referral_code = CharField(max_length=40, default=uuid4(), unique=True)
+    referral_code = CharField(max_length=40, default=uuid4, unique=True)
 
     def __str__(self):
         return self.chat_id
@@ -85,7 +85,7 @@ class Stats(Model):
     id = BigIntField(pk=True)
     user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="stats")
     coins = BigIntField(default=1000)
-    energy = BigIntField(default=2000)
+    energy = FloatField(default=2000)
     earned_week_coins = BigIntField(default=0)
     invited_friends = BigIntField(default=0)
     inspirations = BigIntField(default=0)
@@ -98,7 +98,7 @@ class Stats(Model):
 class Reward(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
-    type_name = CharEnumField(enum_type=RewardTypeName, default=RankName.ACOLYTE, description='Награда')
+    type_name = CharEnumField(enum_type=RewardTypeName, default=RewardTypeName.REFERRAL, description='Награда')
     amount = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
