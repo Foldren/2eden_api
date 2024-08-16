@@ -1,8 +1,8 @@
 from datetime import timedelta
 from os import environ
+import yaml
 from dotenv import load_dotenv
 from fastapi_jwt import JwtRefreshBearerCookie, JwtAccessBearerCookie
-from tortoise import generate_config
 
 load_dotenv()
 
@@ -12,16 +12,19 @@ SECRET_KEY = environ['SECRET_KEY']
 
 REDIS_URL = environ['REDIS_URL']
 
-API_PG_URL = environ['API_PG_URL']
+PG_CONFIG = yaml.load(environ['PG_CONFIG'], Loader=yaml.Loader)
 
 TORTOISE_CONFIG = {
     "connections": {
-        "api": API_PG_URL,
-        "test": {
-            "engine": "tortoise.backends.sqlite",
+        "api": {
+            "engine": "tortoise.backends.asyncpg",
             "credentials": {
-                "file_path": "test.db",
-                "foreign_keys": "ON",
+                "user": PG_CONFIG["user"],
+                "password": PG_CONFIG["psw"],
+                "host": PG_CONFIG["host"],
+                "port": PG_CONFIG["port"],
+                "database": PG_CONFIG["db"],
+                "maxsize": 9,  # соотнести с max_connections psql maxsize / max_connections = 1 / 10
             }
         }
     },

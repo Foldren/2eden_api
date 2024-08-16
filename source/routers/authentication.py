@@ -4,7 +4,8 @@ from fastapi import Security
 from fastapi_jwt import JwtAuthorizationCredentials
 from starlette import status
 from tortoise.exceptions import IntegrityError
-from components.responses import CustomJSONResponse
+from components.app.requests import RegistrationRequest, LoginRequest
+from components.app.responses import CustomJSONResponse
 from components.tools import get_daily_reward, get_referral_reward, sync_energy, get_jwt_cookie_response
 from config import SECRET_KEY, REFRESH_SECURITY
 from db_models.api import User, Stats, Activity
@@ -13,26 +14,23 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/registration")
-async def registration(chat_id: int, token: str, country: str, referral_code: str = "") -> CustomJSONResponse:
+async def registration(req: RegistrationRequest) -> CustomJSONResponse:
     """
     Эндпойнт регистрации, берет из телеграм бота chat_id, страну и токен, по ним регистрирует
     пользователя. При наличии реферального кода (отправленного в сообщении к боту с командой старт)
     обновляет число приглашенных рефералов для реферрера.
-    :param chat_id: айди юзера в телеграм
-    :param token: токен из телеграм
-    :param country: страна из телеграм
-    :param referral_code: реферальный код
+    :param req: request объект с данными юзера RegistrationRequest
     :return:
     """
     try:
-        encrypt_token = Fernet(SECRET_KEY).encrypt(token.encode())
-        user = await User.create(chat_id=chat_id, country=country, token=encrypt_token, rank_id=1)
+        encrypt_token = Fernet(SECRET_KEY).encrypt(req.token.encode())
+        user = await User.create(chat_id=req.chat_id, country=req.country, token=encrypt_token, rank_id=1)
 
         await Stats.create(user_id=user.id)
         await Activity.create(user_id=user.id)
 
-        if referral_code:
-            await get_referral_reward(user, referral_code)
+        if req.referral_code:
+            await get_referral_reward(user, req.referral_code)
 
         await get_daily_reward(user.id)  # получаем ежедневную награду за вход
 
@@ -49,14 +47,13 @@ async def registration(chat_id: int, token: str, country: str, referral_code: st
 
 
 @router.post("/login")
-async def login(chat_id: int, token: str) -> CustomJSONResponse:
+async def login(req: LoginRequest) -> CustomJSONResponse:
     """
     Эндпойнт авторизации, авторизует в боте по токену и айди пользователя телеграм.
-    :param chat_id: айди юзера в телеграм
-    :param token: токен из телеграм
+    :param req: request объект с данными юзера LoginRequest
     :return:
     """
-    user = await User.filter(chat_id=chat_id).select_related("activity", "stats", "rank").first()
+    user = await User.filter(chat_id=req.chat_id).select_related("activity", "stats", "rank").first()
 
     if not user:
         return CustomJSONResponse(message="Не вижу такого пользователя.",
@@ -64,7 +61,7 @@ async def login(chat_id: int, token: str) -> CustomJSONResponse:
 
     decrypt_token = Fernet(SECRET_KEY).decrypt(user.token).decode("utf-8")
 
-    if decrypt_token != token:
+    if decrypt_token != req.token:
         return CustomJSONResponse(message="Уупс, токен неверный.",
                                   status_code=status.HTTP_400_BAD_REQUEST)
 

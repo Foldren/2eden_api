@@ -17,7 +17,7 @@ from routers import authentication, synchronization, mining, rewarding, leaderbo
 # Используемые базы данных Redis
 # db10 - Кеш fastapi_cache
 
-app = FastAPI(default_response_class=UJSONResponse, docs_url="/swagger")
+app = FastAPI(default_response_class=UJSONResponse)
 
 # Подключаем Tortoise ORM
 register_tortoise(app=app,
@@ -36,7 +36,6 @@ app.add_middleware(
 # Инициализируем все
 app.add_event_handler("startup", init)
 
-
 # Подключаем роутеры
 app.include_router(authentication.router)
 app.include_router(synchronization.router)
@@ -49,7 +48,8 @@ app.include_router(tasks.router)
 # Настраиваем админку
 @app.get("/")
 async def redirect_admin() -> RedirectResponse:
-    return RedirectResponse(url="/admin")
+    return RedirectResponse(url="/docs")
+
 
 admin = BaseAdmin(title="2Eden Admin",
                   auth_provider=CustomAuthProvider(),
@@ -63,6 +63,5 @@ admin.add_view(DropDown("Пользователи",
 
 admin.mount_to(app)
 
-
 if __name__ == "__main__":
-    run("app:app")
+    run("app:app", workers=8)

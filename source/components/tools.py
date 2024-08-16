@@ -4,7 +4,7 @@ from httpx import Response
 from pytz import timezone
 from components import enums
 from components.enums import VisibilityType
-from components.responses import CustomJSONResponse
+from components.app.responses import CustomJSONResponse
 from config import REFRESH_SECURITY, ACCESS_SECURITY
 from db_models.api import User, Reward, Task, RankVisibility
 

@@ -6,7 +6,7 @@ from pytz import timezone
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from components.enums import ConditionType
-from components.responses import CustomJSONResponse
+from components.app.responses import CustomJSONResponse
 from components.tools import check_task_visibility
 from config import ACCESS_SECURITY
 from db_models.api import User, Task, VisitLinkCondition, TgChannelCondition, UserTask

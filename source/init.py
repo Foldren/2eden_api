@@ -1,7 +1,7 @@
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis.asyncio import from_url
-from components.coders import UJsonCoder
+from components.app.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
 from config import REDIS_URL, ADMIN_HASH_PASSWORD, ADMIN_NAME
 from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, \

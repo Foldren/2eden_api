@@ -3,95 +3,30 @@ from typing import Dict, Any
 import pytest
 from httpx import AsyncClient
 from pytz import timezone
-from starlette.status import HTTP_201_CREATED, HTTP_208_ALREADY_REPORTED, HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, \
-    HTTP_202_ACCEPTED, HTTP_409_CONFLICT, HTTP_200_OK
+from starlette.status import HTTP_200_OK
 from components.tools import assert_status_code
 from db_models.api import User, Activity, Stats, Reward
-
-register_params = (
-    pytest.param({"chat_id": 1, "token": "1", "country": "ru"}, "no_referral_code", HTTP_201_CREATED,
-                 id="without_referral_code"),
-    pytest.param({"chat_id": 2, "token": "2", "country": "ru"}, "referral_code", HTTP_201_CREATED,
-                 id="with_referral_code"),
-    pytest.param({"chat_id": 2, "token": "2", "country": "ru"}, "with_register_ci", HTTP_208_ALREADY_REPORTED,
-                 id="with_register_chat_id"),
-)
-
-login_params = (
-    pytest.param({"chat_id": 3, "token": "1"}, "bad_login", HTTP_404_NOT_FOUND, id="with_bad_login"),
-    pytest.param({"chat_id": 1, "token": "2"}, "bad_token", HTTP_400_BAD_REQUEST, id="with_bad_token"),
-    pytest.param({"chat_id": 1, "token": "1"}, "auth", HTTP_202_ACCEPTED, id="without_constraints"),
-)
-
-update_rank_params = (
-    pytest.param("without_coins", HTTP_409_CONFLICT, id="without_coins"),
-    pytest.param("with_coins", HTTP_202_ACCEPTED, id="with_coins"),
-    pytest.param("with_max_rank", HTTP_409_CONFLICT, id="with_max_rank"),
-)
-
-start_mining_params = (
-    pytest.param("with_small_rank", HTTP_409_CONFLICT, id="with_small_rank"),
-    pytest.param("without_constraints", HTTP_202_ACCEPTED, id="without_constraints"),
-    pytest.param("with_active_mining", HTTP_409_CONFLICT, id="with_active_mining"),
-    pytest.param("with_reward", HTTP_409_CONFLICT, id="with_reward"),
-)
-
-end_mining_params = (
-    pytest.param("without_constraints", HTTP_202_ACCEPTED, id="without_constraints"),
-    pytest.param("with_small_rank", HTTP_409_CONFLICT, id="with_small_rank"),
-    pytest.param("with_not_end_mining", HTTP_409_CONFLICT, id="with_not_end_mining"),
-    pytest.param("with_not_active_mining", HTTP_409_CONFLICT, id="with_not_active_mining"),
-)
-
-get_reward_list_params = (
-    pytest.param("with_rewards", HTTP_200_OK, id="with_rewards"),
-    pytest.param("without_rewards", HTTP_404_NOT_FOUND, id="without_rewards"),
-)
-
-get_reward_params = (
-    pytest.param("without_rewards", HTTP_404_NOT_FOUND, id="without_rewards"),
-    pytest.param("with_someone_else_reward", HTTP_404_NOT_FOUND, id="with_someone_else_reward"),
-    pytest.param("with_own_reward", HTTP_200_OK, id="with_own_reward"),
-)
-
-sync_clicks_params = (
-    pytest.param("with_energy", HTTP_200_OK, id="with_energy"),
-    pytest.param("without_energy", HTTP_409_CONFLICT, id="without_energy"),
-)
-
-inspiration_params = (
-    pytest.param("with_small_rank", HTTP_409_CONFLICT, id="with_small_rank"),
-    pytest.param("without_boosts", HTTP_409_CONFLICT, id="without_boosts"),
-    pytest.param("without_constraints", HTTP_200_OK, id="without_constraints"),
-    pytest.param("with_active_boost", HTTP_409_CONFLICT, id="with_active_boost"),
-)
-
-replenishment_params = (
-    pytest.param("with_small_rank", HTTP_409_CONFLICT, id="with_small_rank"),
-    pytest.param("without_boosts", HTTP_409_CONFLICT, id="without_boosts"),
-    pytest.param("with_max_energy", HTTP_409_CONFLICT, id="with_max_energy"),
-    pytest.param("without_constraints", HTTP_200_OK, id="without_constraints"),
-)
+import params
 
 
-@pytest.mark.parametrize("data, variant, status_code", register_params)
+@pytest.mark.parametrize("data, variant, status_code", params.register_params)
 async def test_register(client: AsyncClient, data: Dict[str, Any], variant: str, status_code: int) -> None:
     match variant:
         case "no_referral_code":
-            response = await client.post(url="/auth/registration", params=data)
+            response = await client.post(url="/auth/registration", json=data)
         case "referral_code":
             referrer = await User.first()
             data["referral_code"] = referrer.referral_code
-            response = await client.post(url="/auth/registration", params=data)
+            response = await client.post(url="/auth/registration", json=data)
         case _:
-            response = await client.post(url="/auth/registration", params=data)
+            response = await client.post(url="/auth/registration", json=data)
 
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("data, variant, status_code", login_params)
+@pytest.mark.parametrize("data, variant, status_code", params.login_params)
 async def test_login(client: AsyncClient, data: Dict[str, Any], variant: str, status_code: int) -> None:
-    response = await client.post(url="/auth/login", params=data)
+    response = await client.post(url="/auth/login", json=data)
     await assert_status_code(response, status_code)
 
 
@@ -105,7 +40,7 @@ async def test_get_leaderboard(client: AsyncClient) -> None:
     await assert_status_code(response, HTTP_200_OK)
 
 
-@pytest.mark.parametrize("variant, status_code", update_rank_params)
+@pytest.mark.parametrize("variant, status_code", params.update_rank_params)
 async def test_update_rank(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_coins":
@@ -117,7 +52,7 @@ async def test_update_rank(client: AsyncClient, variant: str, status_code: int) 
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", start_mining_params)
+@pytest.mark.parametrize("variant, status_code", params.start_mining_params)
 async def test_start_mining(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_small_rank":
@@ -136,7 +71,7 @@ async def test_start_mining(client: AsyncClient, variant: str, status_code: int)
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", end_mining_params)
+@pytest.mark.parametrize("variant, status_code", params.end_mining_params)
 async def test_end_mining(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "without_constraints":
@@ -159,7 +94,7 @@ async def test_end_mining(client: AsyncClient, variant: str, status_code: int) -
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", get_reward_list_params)
+@pytest.mark.parametrize("variant, status_code", params.get_reward_list_params)
 async def test_get_reward_list(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_rewards":
@@ -171,33 +106,33 @@ async def test_get_reward_list(client: AsyncClient, variant: str, status_code: i
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", get_reward_params)
+@pytest.mark.parametrize("variant, status_code", params.get_reward_params)
 async def test_get_reward(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "without_rewards":
-            response = await client.post(url="/reward", params={"reward_id": 2})
+            response = await client.post(url="/reward", json={"reward_id": 2})
         case "with_someone_else_reward":
             reward = await Reward.create(user_id=2)
-            response = await client.post(url="/reward", params={"reward_id": reward.id})
+            response = await client.post(url="/reward", json={"reward_id": reward.id})
         case _:
             reward = await Reward.create(user_id=1)
-            response = await client.post(url="/reward", params={"reward_id": reward.id})
+            response = await client.post(url="/reward", json={"reward_id": reward.id})
 
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", sync_clicks_params)
+@pytest.mark.parametrize("variant, status_code", params.sync_clicks_params)
 async def test_sync_clicks(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_energy":
-            response = await client.patch(url="/user/sync_clicks", params={"clicks": 5000})
+            response = await client.patch(url="/user/sync_clicks", json={"clicks": 5000})
         case _:
-            response = await client.patch(url="/user/sync_clicks", params={"clicks": 5000})
+            response = await client.patch(url="/user/sync_clicks", json={"clicks": 5000})
 
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", inspiration_params)
+@pytest.mark.parametrize("variant, status_code", params.inspiration_params)
 async def test_sync_inspiration_clicks(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_small_rank":
@@ -207,11 +142,11 @@ async def test_sync_inspiration_clicks(client: AsyncClient, variant: str, status
         case "without_constraints":
             await Stats.filter(id=1).update(inspirations=2)
 
-    response = await client.patch(url="/user/bonus/sync_inspiration_clicks", params={"clicks": 5000})
+    response = await client.patch(url="/user/bonus/sync_inspiration_clicks", json={"clicks": 5000})
     await assert_status_code(response, status_code)
 
 
-@pytest.mark.parametrize("variant, status_code", replenishment_params)
+@pytest.mark.parametrize("variant, status_code", params.replenishment_params)
 async def test_use_replenishment(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_small_rank":

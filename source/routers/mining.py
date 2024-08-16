@@ -3,7 +3,7 @@ from fastapi import Security, APIRouter
 from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
 from starlette import status
-from components.responses import CustomJSONResponse
+from components.app.responses import CustomJSONResponse
 from components.tools import send_referral_mining_reward
 from config import ACCESS_SECURITY
 from db_models.api import User
