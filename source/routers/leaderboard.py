@@ -2,7 +2,7 @@ from fastapi import Security, APIRouter
 from fastapi_cache.decorator import cache
 from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
-from components.responses import CustomJSONResponse
+from components.app.responses import CustomJSONResponse
 from config import ACCESS_SECURITY
 from db_models.api import Stats, User, Rank
 
@@ -25,7 +25,8 @@ async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> C
 
     users_stats.reverse()
 
-    return CustomJSONResponse(data={"leaders": users_stats})
+    return CustomJSONResponse(data={"leaders": users_stats},
+                              message="Выведен список лидеров на текущую неделю.")
 
 
 @router.patch("/promote")
@@ -35,10 +36,10 @@ async def update_rank(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Custo
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("stats", "rank").first()
 
-    if user.rank.id == 20:
+    if user.rank.id >= 20:
         return CustomJSONResponse(message="У вас максимальный ранг.",
                                   status_code=status.HTTP_409_CONFLICT)
 

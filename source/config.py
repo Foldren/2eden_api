@@ -1,5 +1,6 @@
 from datetime import timedelta
 from os import environ
+import yaml
 from dotenv import load_dotenv
 from fastapi_jwt import JwtRefreshBearerCookie, JwtAccessBearerCookie
 
@@ -7,22 +8,33 @@ load_dotenv()
 
 JWT_SECRET = environ['JWT_SECRET']
 
+JWT_ALGORITHM = environ['JWT_ALGORITHM']
+
 SECRET_KEY = environ['SECRET_KEY']
 
 REDIS_URL = environ['REDIS_URL']
 
+PG_CONFIG = yaml.load(environ['PG_CONFIG'], Loader=yaml.Loader)
+
 TORTOISE_CONFIG = {
     "connections": {
         "api": {
-            "engine": "tortoise.backends.sqlite",
+            "engine": "tortoise.backends.asyncpg",
             "credentials": {
-                "file_path": ".test.db",
-                "foreign_keys": "ON",
-            },
+                "user": PG_CONFIG["user"],
+                "password": PG_CONFIG["psw"],
+                "host": PG_CONFIG["host"],
+                "port": PG_CONFIG["port"],
+                "database": PG_CONFIG["db"],
+                "maxsize": 2,  # maxsize / max_connections = 1 / 10
+                               # max_connections / CPUs = 4
+
+                # используем 5 потоков: 20 connections, 2 maxize
+            }
         }
     },
     "apps": {
-        "api": {"models": ["db_models.api"], "default_connection": "api"}
+        "api": {"models": ["db_models.api"], "default_connection": "api"},
     },
     'use_tz': True,
     'timezone': 'Europe/Moscow'

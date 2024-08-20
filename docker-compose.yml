@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16.1-alpine3.18
+    container_name: 2eden_db
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: ${PSQL_USER}
+      POSTGRES_PASSWORD: ${PSQL_PSW}
+      POSTGRES_DB: ${PSQL_DB}
+      TZ: Europe/Moscow
+    ports:
+      - 1100:5432
+    networks:
+      - 2eden_network
+    volumes:
+      - ./pgtune_init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/postgresql/data
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  cache:
+    image: redis:alpine
+    container_name: advance_report_cache
+    restart: always
+    env_file:
+      - ./.env
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - 1000:6379
+    networks:
+      - 2eden_network
+    volumes:
+      - cache_data:/data
+
+  app:
+    build: .
+    container_name: 2eden_api
+    restart: always
+    environment:
+      - TZ=Europe/Moscow
+    depends_on:
+      - db
+      - cache
+    ports:
+      - 3000:8000
+    networks:
+      - 2eden_network
+
+networks:
+  2eden_network:
+
+volumes:
+  db_data:
+  cache_data:
