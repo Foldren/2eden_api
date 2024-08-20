@@ -18,7 +18,7 @@ async def start_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Cust
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("rank", "activity").first()
 
     if user.rank.id < 4:
@@ -49,7 +49,7 @@ async def end_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Custom
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("stats", "rank", "activity").first()
 
     if user.rank.id < 4:

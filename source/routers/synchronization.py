@@ -24,7 +24,7 @@ async def sync_clicks(req: SyncClicksRequest, credentials: JwtAuth = Security(AC
     :return:
     """
 
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("rank", "stats", "activity").first()
 
     await sync_energy(user)
@@ -57,7 +57,7 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
     max_extraction = int(user.rank.max_energy * 1.2)  # максимум можно заработать max_energy + 20%
 
@@ -98,7 +98,7 @@ async def use_replenishment(credentials: JwtAuth = Security(ACCESS_SECURITY)) ->
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
 
     if user.rank.id < 3:
@@ -128,7 +128,7 @@ async def get_user_profile(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> 
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).prefetch_related("activity", "stats", "rank", "leads",
                                                         "rewards", "leader_place").first()
 

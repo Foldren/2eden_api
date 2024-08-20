@@ -22,7 +22,7 @@ async def get_tasks(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJ
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("rank").first()
 
     # фильтрация по условию доступности
@@ -41,7 +41,7 @@ async def take_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURIT
     :param task_id: id задачи
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("rank", "activity").first()
 
     try:
@@ -72,7 +72,7 @@ async def complete_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SEC
     :param task_id: id задачи
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("rank", "activity", "stats").first()
 
     try:

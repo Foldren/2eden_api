@@ -38,7 +38,7 @@ async def registration(req: RegistrationRequest) -> CustomJSONResponse:
         return CustomJSONResponse(message="Пользователь уже зарегистрирован.",
                                   status_code=status.HTTP_208_ALREADY_REPORTED)
 
-    payload = {"id": user.id}
+    payload = {"user": user.id}
     response = await get_jwt_cookie_response(message="Пользователь создан.",
                                              payload=payload,
                                              status_code=status.HTTP_201_CREATED)
@@ -65,7 +65,7 @@ async def login(req: LoginRequest) -> CustomJSONResponse:
         return CustomJSONResponse(message="Уупс, токен неверный.",
                                   status_code=status.HTTP_400_BAD_REQUEST)
 
-    payload = {"id": user.id}
+    payload = {"user": user.id}
     await get_daily_reward(user.id)  # получаем ежедневную награду за вход
     await sync_energy(user)
 
@@ -83,8 +83,8 @@ async def refresh(credentials: JwtAuthorizationCredentials = Security(REFRESH_SE
     :param credentials: authorization Refresh header
     :return:
     """
-    user_id = credentials.subject.get("id")
-    payload = {"id": user_id}
+    user_id = credentials.subject.get("user")
+    payload = {"user": user_id}
     user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
 
     await get_daily_reward(user_id)  # получаем ежедневную награду за вход

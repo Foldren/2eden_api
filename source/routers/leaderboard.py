@@ -36,7 +36,7 @@ async def update_rank(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Custo
     :param credentials: authorization headers
     :return:
     """
-    user_id = credentials.subject.get("id")  # узнаем id юзера из токена
+    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
     user = await User.filter(id=user_id).select_related("stats", "rank").first()
 
     if user.rank.id >= 20:

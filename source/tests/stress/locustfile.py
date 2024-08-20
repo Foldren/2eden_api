@@ -14,8 +14,16 @@ users_cr: List[Dict[str, int | str]] = []
 
 
 class Api2EdenUser(FastHttpUser):
-    # 2000 юзеров ~ 450req/ps  2000/450 ~ 4 (надо умножить between на 4 чтобы получить ту же нагрузку
-    wait_time = constant(10)  # between(1, 5)
+    # Настройка на 10000 юзеров и ~ 500 RPS
+    wait_time = constant(20)  # RPS ~ USERS / WAIT_TIME, WAIT_TIME = USERS / желаемый RPS
+
+    # @task(43)
+    # def registration(self):
+    #     data = {"chat_id": random.randint(1234, 900252525),
+    #             "token": str(random.randint(1234, 900252525)),
+    #             "country": str(random.randint(1234, 900252525))
+    #             }
+    #     self.client.post("/auth/registration", json=data)
 
     def on_start(self) -> None:
         """
@@ -25,14 +33,6 @@ class Api2EdenUser(FastHttpUser):
         d_token = Fernet(SECRET_KEY).decrypt(user["token"]).decode("utf-8")
         data = {"chat_id": user["chat_id"], "token": d_token}
         self.client.post("/auth/login", json=data)
-
-    # @task(43)
-    # def registration(self):
-    #     data = {"chat_id": random.randint(1234, 900252525),
-    #             "token": str(random.randint(1234, 900252525)),
-    #             "country": str(random.randint(1234, 900252525))
-    #             }
-    #     self.client.post("/auth/registration", json=data)
 
     @task(1)
     def refresh(self) -> None:

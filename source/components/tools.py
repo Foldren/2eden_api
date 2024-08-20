@@ -1,11 +1,16 @@
 from datetime import timedelta, datetime
-from typing import Any
+from http.cookies import SimpleCookie
+from typing import Any, Tuple
+
+import jwt
 from httpx import Response
 from pytz import timezone
+from ratelimit.types import Scope, ASGIApp
+
 from components import enums
 from components.enums import VisibilityType
 from components.app.responses import CustomJSONResponse
-from config import REFRESH_SECURITY, ACCESS_SECURITY
+from config import REFRESH_SECURITY, ACCESS_SECURITY, JWT_SECRET, JWT_ALGORITHM
 from db_models.api import User, Reward, Task, RankVisibility
 
 
@@ -203,4 +208,33 @@ async def assert_status_code(response: Response, status_code: int) -> None:
     """
     frmt_text = f"[Message: {response.json()["message"]["text"]}]"
     assert response.status_code == status_code, frmt_text
-    print(frmt_text)
+    print(frmt_text)  # Это нужный вывод
+
+
+# async def handle_auth_error(exc: Exception) -> ASGIApp:
+#     """
+#     Хендлер на ошибку функции мониторина активности юзеров.
+#     :param exc: объект Exception
+#     :return:
+#     """
+#     return CustomJSONResponse({"message": "Incorrect headers."}, status_code=409)
+#
+#
+# async def auth_function(scope: Scope) -> Tuple[str, str]:
+#     """
+#     Функция для мониторинга активности юзеров для RateLimitMiddleWare,
+#     берет id юзера из access_token cookies, блокирует на 30 секунд, если он ддосит
+#     :param scope: объект request scope
+#     :return:
+#     """
+#     dict_headers = dict(scope["headers"])
+#     user_ip = dict_headers[b'x-real-ip'].decode("utf-8")
+#     # raw_cookies = dict_headers[b"cookie"].decode("utf-8")
+#     # cookies = SimpleCookie()
+#     # cookies.load(raw_cookies)
+#     # at = cookies["refresh_token_cookie"].value.encode()
+#     # user = jwt.decode(jwt=at, key=JWT_SECRET, algorithms=JWT_ALGORITHM, options={"verify_exp": False})
+#
+#     # возвращаем user, group
+#     # user['subject']['user']
+#     return user_ip, 'default'

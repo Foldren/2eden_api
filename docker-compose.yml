@@ -1,11 +1,10 @@
 services:
   db:
-    image: postgres:alpine
+    image: postgres:16.1-alpine3.18
     container_name: 2eden_db
     restart: always
     env_file:
       - ./.env
-    command: -c max_connections=100 -c shared_buffers=2000MB
     environment:
       POSTGRES_USER: ${PSQL_USER}
       POSTGRES_PASSWORD: ${PSQL_PSW}
@@ -16,7 +15,10 @@ services:
     networks:
       - 2eden_network
     volumes:
+      - ./pgtune_init.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/postgresql/data
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
   cache:
     image: redis:alpine
     container_name: advance_report_cache
@@ -30,6 +32,7 @@ services:
       - 2eden_network
     volumes:
       - cache_data:/data
+
   app:
     build: .
     container_name: 2eden_api

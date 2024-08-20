@@ -8,6 +8,8 @@ load_dotenv()
 
 JWT_SECRET = environ['JWT_SECRET']
 
+JWT_ALGORITHM = environ['JWT_ALGORITHM']
+
 SECRET_KEY = environ['SECRET_KEY']
 
 REDIS_URL = environ['REDIS_URL']
@@ -24,7 +26,10 @@ TORTOISE_CONFIG = {
                 "host": PG_CONFIG["host"],
                 "port": PG_CONFIG["port"],
                 "database": PG_CONFIG["db"],
-                "maxsize": 9,  # соотнести с max_connections psql maxsize / max_connections = 1 / 10
+                "maxsize": 2,  # maxsize / max_connections = 1 / 10
+                               # max_connections / CPUs = 4
+
+                # используем 5 потоков: 20 connections, 2 maxize
             }
         }
     },
