@@ -184,6 +184,57 @@ class UserTask(Model):
         return self.completed_time is not None
 
 
+# ------ Вопросы и ответы ------
+
+
+class UserQuestion(Model):
+    """
+    Вопросы пользователей
+    Нужно, для:
+    - получения истории вопросов пользователя
+    - знания частоты вопросов пользователя
+    - знания всех вопросов, которые задавались
+    """
+    id = BigIntField(pk=True)
+    creator = ForeignKeyField('api.User', on_delete=OnDelete.CASCADE, related_name='questions')
+    created = DatetimeField(auto_now_add=True)
+    text = CharField(max_length=1000)
+
+
+class UserAnswer(Model):
+    """
+    Ответы на вопросы
+    Нужно, для:
+    - хранения ответов
+    - хранения награды за ответ
+    - хранения времени ответа
+    - связи между вопросом и кешированным ответом
+    """
+    id = BigIntField(pk=True)
+    question = OneToOneField('api.UserQuestion', on_delete=OnDelete.CASCADE, related_name='answer')
+    created = DatetimeField(auto_now_add=True)
+    text = CharField(max_length=1000)  # Текст фактического ответа (может отличаться от кешированного)
+    base_reward = BooleanField(default=False)  # Награда за ответ
+    secret_reward = BooleanField(default=False)  # Секретный ответ
+    rewarded = BooleanField(default=False)  # Получил ли пользователь награду
+    cached_answer = ForeignKeyField('api.CachedAnswer', on_delete=OnDelete.CASCADE, related_name='users_answers', null=True)
+
+
+class CachedAnswer(Model):
+    """
+    Кешированные ответы на вопросы, которые полученные от ИИ или админа.
+    Нужно, для:
+    - составления векторной базы вопросов и поиска по ней ответа
+    - хранения секретных вопросов
+    """
+    id = BigIntField(pk=True)
+    reference_question_text = CharField(max_length=1000)
+    reference_question_vector = BinaryField()
+    answer_text = CharField(max_length=1000)
+    is_secret = BooleanField(default=False)
+
+# ------ Конец вопросов и ответов ------
+
 Tortoise.init_models(["db_models.api"], "api")
 
 User_Pydantic = pydantic_model_creator(User, name="User")
