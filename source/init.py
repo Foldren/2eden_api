@@ -3,9 +3,9 @@ from fastapi_cache.backends.redis import RedisBackend
 from redis.asyncio import from_url
 from components.app.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
-from config import REDIS_URL, ADMIN_HASH_PASSWORD, ADMIN_NAME
+from config import REDIS_URL
 from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, \
-    RankVisibility, Admin
+    RankVisibility
 
 
 async def init_cache() -> None:
@@ -21,10 +21,10 @@ async def create_necessary_db_objects() -> None:
     Функция для создания необходимых для работы записей в бд.
     """
     # Создание суперадмина ---------------------------------------------------------------------------------------------
-    admin = await Admin.first()
-
-    if not admin:  # todo Убрать -> c_aM8x3jGrJdBMOMHTc-xBp6hp0b-g
-        await Admin.create(username=ADMIN_NAME, password=ADMIN_HASH_PASSWORD, is_superuser=True)
+    # admin = await Admin.first()
+    #
+    # if not admin:  # todo Убрать -> c_aM8x3jGrJdBMOMHTc-xBp6hp0b-g
+    #     await Admin.create(username=ADMIN_NAME, password=ADMIN_HASH_PASSWORD, is_superuser=True)
 
     # Создание рангов --------------------------------------------------------------------------------------------------
     ranks = await Rank.all()

@@ -9,7 +9,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin import UserView, RankView, ActivityView, RewardsView, StatsView
 from components.admin.auth import CustomAuthProvider
-from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, REDIS_URL, PSQL_CPUS
+from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, REDIS_URL, PSQL_CPUS, HOST
 from db_models.api import User, Rank, Stats, Activity, Reward
 from init import init
 from routers import authentication, synchronization, mining, rewarding, leaderboard, tasks
@@ -35,7 +35,7 @@ register_tortoise(app=app,
 # Добавляем cors middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],
+    # allow_origins=["http://127.0.0.1:8080"],
     allow_credentials=True,
     allow_methods=["POST", "GET", "PUT", "DELETE", "PATCH"],
     allow_headers=["Authorization"],
@@ -88,4 +88,4 @@ admin.mount_to(app)
 
 if __name__ == "__main__":
     # workers = число потоков (1 процесс = 1 поток)
-    run("app:app", interface="asgi3", workers=max(PSQL_CPUS, 1), lifespan="on")
+    run("app:app", interface="asgi3", workers=max(PSQL_CPUS, 1), lifespan="on", host=HOST)

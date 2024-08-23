@@ -1,10 +1,12 @@
 from datetime import timedelta
-from os import environ
+from os import environ, getcwd
 import yaml
 from dotenv import load_dotenv
 from fastapi_jwt import JwtRefreshBearerCookie, JwtAccessBearerCookie
 
 load_dotenv()
+
+IS_THIS_LOCAL = "Pycharm" in getcwd()
 
 JWT_SECRET = environ['JWT_SECRET']
 
@@ -15,6 +17,8 @@ SECRET_KEY = environ['SECRET_KEY']
 REDIS_URL = environ['REDIS_URL']
 
 PG_CONFIG = yaml.load(environ['PG_CONFIG'], Loader=yaml.Loader)
+
+HOST = "127.0.0.1" if IS_THIS_LOCAL else "0.0.0.0"
 
 # используем 13 потоков для 500RPS:
 # -- Масштабируется --

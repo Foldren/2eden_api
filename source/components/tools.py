@@ -1,17 +1,14 @@
 from datetime import timedelta, datetime
-from http.cookies import SimpleCookie
-from typing import Any, Tuple
-
-import jwt
+from typing import Any
 from httpx import Response
 from pytz import timezone
-from ratelimit.types import Scope, ASGIApp
-
 from components import enums
 from components.enums import VisibilityType
 from components.app.responses import CustomJSONResponse
-from config import REFRESH_SECURITY, ACCESS_SECURITY, JWT_SECRET, JWT_ALGORITHM
+from config import REFRESH_SECURITY, ACCESS_SECURITY
 from db_models.api import User, Reward, Task, RankVisibility
+# from http.cookies import SimpleCookie
+# from ratelimit.types import Scope, ASGIApp
 
 
 async def get_daily_reward(user_id: str) -> None:

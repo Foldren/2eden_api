@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
-from fastapi_admin.models import AbstractAdmin
 from pytz import timezone
 from tortoise import Model, Tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
@@ -10,18 +9,18 @@ from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, Da
 from components.enums import RankName, RewardTypeName, VisibilityType, ConditionType
 
 
-class Admin(AbstractAdmin):
-    id = BigIntField(pk=True)
-    username = CharField(max_length=255, unique=True)
-    password = CharField(max_length=255)
-    is_superuser = BooleanField(default=False)
-    is_active = BooleanField(default=False)
-
-    def __str__(self):
-        return self.username
-
-    class Meta:
-        table = "admins"
+# class Admin(Model):
+#     id = BigIntField(pk=True)
+#     username = CharField(max_length=255, unique=True)
+#     password = CharField(max_length=255)
+#     is_superuser = BooleanField(default=False)
+#     is_active = BooleanField(default=False)
+#
+#     def __str__(self):
+#         return self.username
+#
+#     class Meta:
+#         table = "admins"
 
 
 class Rank(Model):  # В системе изначально создаются все 10 рангов
