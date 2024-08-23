@@ -16,6 +16,17 @@ REDIS_URL = environ['REDIS_URL']
 
 PG_CONFIG = yaml.load(environ['PG_CONFIG'], Loader=yaml.Loader)
 
+# используем 13 потоков для 500RPS:
+# -- Масштабируется --
+# 5 потоков -> psql = 20 connections
+# 5 потоков -> uvicron workers
+# -- Не масштабируется --
+# 1 поток -> asyncpg = 2 maxsize
+# 1 поток -> redis
+# ~1 поток -> nginx
+
+PSQL_CPUS = 5  # RPS = PSQL_CPUS * 100 (500)
+
 TORTOISE_CONFIG = {
     "connections": {
         "api": {
@@ -26,10 +37,7 @@ TORTOISE_CONFIG = {
                 "host": PG_CONFIG["host"],
                 "port": PG_CONFIG["port"],
                 "database": PG_CONFIG["db"],
-                "maxsize": 2,  # maxsize / max_connections = 1 / 10
-                               # max_connections / CPUs = 4
-
-                # используем 5 потоков: 20 connections, 2 maxize
+                "maxsize": max((PSQL_CPUS * 4) / 10, 1),  # maxsize = max_connections / 10, max_connections = CPUs * 4
             }
         }
     },

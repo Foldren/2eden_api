@@ -1,7 +1,7 @@
 services:
-  db:
+  psql:
     image: postgres:16.1-alpine3.18
-    container_name: 2eden_db
+    container_name: db
     restart: always
     env_file:
       - ./.env
@@ -11,45 +11,60 @@ services:
       POSTGRES_DB: ${PSQL_DB}
       TZ: Europe/Moscow
     ports:
-      - 1100:5432
+      - 15432:5432
     networks:
       - 2eden_network
     volumes:
       - ./pgtune_init.sql:/docker-entrypoint-initdb.d/init.sql
-      - db_data:/var/lib/postgresql/data
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+#      - db_data:/var/lib/postgresql/data
 
-  cache:
-    image: redis:alpine
-    container_name: advance_report_cache
+  redis:
+    image: redis/redis-stack-server
+    container_name: cache
     restart: always
     env_file:
       - ./.env
     command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
-      - 1000:6379
+      - 16379:6379
     networks:
       - 2eden_network
-    volumes:
-      - cache_data:/data
+#    volumes:
+#      - cache_data:/data
 
-  app:
+  fastapi:
     build: .
-    container_name: 2eden_api
+    container_name: api
     restart: always
     environment:
       - TZ=Europe/Moscow
     depends_on:
-      - db
-      - cache
+      - psql
+      - redis
     ports:
-      - 3000:8000
+      - 38000:8000
     networks:
       - 2eden_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Moscow
+    depends_on:
+      - fastapi
+    ports:
+      - 2080:80
+      - 2443:443
+    networks:
+      - 2eden_network
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
 
 networks:
   2eden_network:
 
-volumes:
-  db_data:
-  cache_data:
+#volumes:
+#  db_data:
+#  cache_data:

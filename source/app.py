@@ -9,7 +9,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin import UserView, RankView, ActivityView, RewardsView, StatsView
 from components.admin.auth import CustomAuthProvider
-from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, REDIS_URL
+from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, REDIS_URL, PSQL_CPUS
 from db_models.api import User, Rank, Stats, Activity, Reward
 from init import init
 from routers import authentication, synchronization, mining, rewarding, leaderboard, tasks
@@ -22,7 +22,7 @@ from routers import authentication, synchronization, mining, rewarding, leaderbo
 # db9 - Для asgi_limit
 # db10 - Кеш fastapi_cache
 
-# Для масштабирования изменяем число воркеров в uvicorn
+# Для масштабирования изменяем значение CPUS
 
 app = FastAPI(default_response_class=UJSONResponse)
 
@@ -87,4 +87,5 @@ admin.add_view(DropDown("Пользователи",
 admin.mount_to(app)
 
 if __name__ == "__main__":
-    run("app:app", interface="asgi3", workers=5, lifespan="on")  # workers = число потоков (1 процесс = 1 ядро)
+    # workers = число потоков (1 процесс = 1 поток)
+    run("app:app", interface="asgi3", workers=max(PSQL_CPUS, 1), lifespan="on")
