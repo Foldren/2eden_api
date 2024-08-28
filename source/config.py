@@ -2,9 +2,12 @@ from datetime import timedelta
 from os import environ, getcwd
 import yaml
 from dotenv import load_dotenv
+from fastapi.security.http import HTTPBase
 from fastapi_jwt import JwtRefreshBearerCookie, JwtAccessBearerCookie
 
 load_dotenv()
+
+TG_AUTH_SCHEMA = HTTPBase(scheme="basic")
 
 IS_THIS_LOCAL = "Pycharm" in getcwd()
 

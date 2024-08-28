@@ -1,12 +1,14 @@
 from datetime import timedelta, datetime
 from typing import Annotated
 from aiogram.utils.web_app import safe_parse_webapp_init_data, WebAppInitData
-from fastapi import HTTPException, Header
+from fastapi import HTTPException, Header, Depends, Security
+from fastapi.security import HTTPAuthorizationCredentials, APIKeyHeader
 from httpx import Response
+from pydantic import BaseModel
 from pytz import timezone
 from components import enums
 from components.enums import VisibilityType
-from config import TOKEN
+from config import TOKEN, TG_AUTH_SCHEMA
 from db_models.api import User, Reward, Task, RankVisibility
 from starlette.status import HTTP_401_UNAUTHORIZED
 
@@ -165,7 +167,15 @@ async def assert_status_code(response: Response, status_code: int) -> None:
     print(frmt_text)  # Это нужный вывод
 
 
-async def validate_telegram_hash(x_telegram_init_data: Annotated[str | None, Header()]) -> WebAppInitData:
+class TelegramUser(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    username: str
+    language_code: str
+
+
+async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHeader(name="X-Telegram-Init-Data"))) -> WebAppInitData:
     """
     Fastapi Depend для валидации telegram hash юзера, возвращает init_data, если все окей.
     :param x_telegram_init_data: заголовок с window.Telegram.WebApp.initData
