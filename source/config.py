@@ -18,6 +18,8 @@ REDIS_URL = environ['REDIS_URL']
 
 PG_CONFIG = yaml.load(environ['PG_CONFIG'], Loader=yaml.Loader)
 
+TOKEN = environ['TOKEN']
+
 HOST = "127.0.0.1" if IS_THIS_LOCAL else "0.0.0.0"
 
 # используем 13 потоков для 500RPS:
@@ -29,7 +31,7 @@ HOST = "127.0.0.1" if IS_THIS_LOCAL else "0.0.0.0"
 # 1 поток -> redis
 # ~1 поток -> nginx
 
-PSQL_CPUS = 5  # RPS = PSQL_CPUS * 100 (500)
+PSQL_CPUS = 1 if IS_THIS_LOCAL else 5  # RPS = PSQL_CPUS * 100 (500)
 
 TORTOISE_CONFIG = {
     "connections": {

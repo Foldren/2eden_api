@@ -9,20 +9,6 @@ from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, Da
 from components.enums import RankName, RewardTypeName, VisibilityType, ConditionType
 
 
-# class Admin(Model):
-#     id = BigIntField(pk=True)
-#     username = CharField(max_length=255, unique=True)
-#     password = CharField(max_length=255)
-#     is_superuser = BooleanField(default=False)
-#     is_active = BooleanField(default=False)
-#
-#     def __str__(self):
-#         return self.username
-#
-#     class Meta:
-#         table = "admins"
-
-
 class Rank(Model):  # В системе изначально создаются все 10 рангов
     id = BigIntField(pk=True)
     users: ReverseRelation["User"]
@@ -41,7 +27,7 @@ class Rank(Model):  # В системе изначально создаются 
 
 
 class User(Model):
-    id = BigIntField(pk=True)
+    id = BigIntField(pk=True)  # = chat_id в телеграм
     rank = ForeignKeyField(model_name="api.Rank", on_delete=OnDelete.CASCADE, related_name="users", default=1)
     referrer = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="leads", null=True)
     leads: ReverseRelation["User"]
@@ -49,13 +35,11 @@ class User(Model):
     activity: OneToOneRelation["Activity"]
     rewards: ReverseRelation["Reward"]
     leader_place: OneToOneRelation["Leader"]
-    chat_id = BigIntField(index=True, unique=True)
-    token = BinaryField()
     country = CharField(max_length=50)  # -
     referral_code = CharField(max_length=40, default=uuid4, unique=True)
 
     def __str__(self):
-        return self.chat_id
+        return self.id
 
     class Meta:
         table = "users"

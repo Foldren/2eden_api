@@ -1,14 +1,14 @@
 from datetime import datetime
-from fastapi import Security, APIRouter
+from typing import Annotated
+from aiogram.utils.web_app import WebAppInitData
+from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
-from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from components.enums import ConditionType
 from components.app.responses import CustomJSONResponse
-from components.tools import check_task_visibility
-from config import ACCESS_SECURITY
+from components.tools import check_task_visibility, validate_telegram_hash
 from db_models.api import User, Task, VisitLinkCondition, TgChannelCondition, UserTask
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -16,14 +16,14 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 @router.get("/available")
 @cache(expire=30)
-async def get_tasks(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Метод для получения списка доступных задач.
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("rank").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("rank").first()
 
     # фильтрация по условию доступности
     all_tasks = await Task.all()
@@ -34,15 +34,15 @@ async def get_tasks(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJ
 
 
 @router.post("/start/{task_id}")
-async def take_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURITY)):
+async def take_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
     Метод для начала Таска. Создает для пользователя задачу для выполнения.
-    :param credentials: authorization headers
     :param task_id: id задачи
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("rank", "activity").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("rank", "activity").first()
 
     try:
         task = await Task.get(id=task_id)
@@ -65,15 +65,15 @@ async def take_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURIT
 
 
 @router.post("/complete/{task_id}")
-async def complete_task(task_id: int, credentials: JwtAuth = Security(ACCESS_SECURITY)):
+async def complete_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
     Метод для завершения задачи. Отмечает задачу как выполненную.
-    :param credentials: authorization headers
     :param task_id: id задачи
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("rank", "activity", "stats").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("rank", "activity", "stats").first()
 
     try:
         user_task = await UserTask.get(user=user, task_id=task_id).select_related("task__condition", "task__reward")

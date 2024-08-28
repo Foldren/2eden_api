@@ -1,25 +1,25 @@
 from datetime import timedelta, datetime
-from fastapi import Security, APIRouter
-from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
+from typing import Annotated
+from aiogram.utils.web_app import WebAppInitData
+from fastapi import APIRouter, Depends
 from pytz import timezone
 from starlette import status
 from components.app.responses import CustomJSONResponse
-from components.tools import send_referral_mining_reward
-from config import ACCESS_SECURITY
+from components.tools import send_referral_mining_reward, validate_telegram_hash
 from db_models.api import User
 
 router = APIRouter(prefix="/mining", tags=["Mining"])
 
 
 @router.post("/start")
-async def start_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def start_mining(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для начала майнинга. Изменяет время старта.
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("rank", "activity").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("rank", "activity").first()
 
     if user.rank.id < 4:
         return CustomJSONResponse(message="Маловат ранг.",
@@ -43,14 +43,14 @@ async def start_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> Cust
 
 
 @router.post("/claim")
-async def end_mining(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def end_mining(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для окончания майнинга.
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("stats", "rank", "activity").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("stats", "rank", "activity").first()
 
     if user.rank.id < 4:
         return CustomJSONResponse(message="Маловат ранг.",

@@ -1,10 +1,11 @@
-from fastapi import Security, APIRouter
+from typing import Annotated
+from aiogram.utils.web_app import WebAppInitData
+from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
-from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
 from components.app.requests import GetRewardRequest
 from components.app.responses import CustomJSONResponse
-from config import ACCESS_SECURITY
+from components.tools import validate_telegram_hash
 from db_models.api import Reward, Stats
 
 router = APIRouter(prefix="/reward", tags=["Reward"])
@@ -12,14 +13,14 @@ router = APIRouter(prefix="/reward", tags=["Reward"])
 
 @router.get("/list")
 @cache(expire=30)
-async def get_reward_list(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def get_reward_list(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение списка наград юзера (приглашение, серия авторизаций, таск, лидерборд, реферал)
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    rewards_values = await (Reward.filter(user_id=user_id)
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    rewards_values = await (Reward.filter(user_id=user_chat_id)
                             .values("id", "type_name", "amount", "inspirations", "replenishments"))
 
     if not rewards_values:
@@ -31,17 +32,18 @@ async def get_reward_list(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> C
 
 @router.post("")
 async def get_reward(req: GetRewardRequest,
-                     credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+                     init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение награды по ID (приглашение, серия авторизаций, таск, лидерборд, реферал)
     :param req: request объект с ID награды GetRewardRequest
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
 
     try:
-        reward = await Reward.filter(user_id=user_id, id=req.reward_id).first()
-        user_stats = await Stats.filter(user_id=user_id).first()
+        reward = await Reward.filter(user_id=user_chat_id, id=req.reward_id).first()
+        user_stats = await Stats.filter(user_id=user_chat_id).first()
 
         user_stats.coins += reward.amount
         user_stats.inspirations += reward.inspirations

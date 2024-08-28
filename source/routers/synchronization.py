@@ -1,31 +1,31 @@
 from datetime import timedelta, datetime
 from math import floor
-from fastapi import Security, APIRouter
+from typing import Annotated
+from aiogram.utils.web_app import WebAppInitData
+from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
-from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from pytz import timezone
 from starlette import status
 from components.app.requests import SyncClicksRequest
 from components.app.responses import CustomJSONResponse
-from components.tools import sync_energy
-from config import ACCESS_SECURITY
+from components.tools import sync_energy, validate_telegram_hash
 from db_models.api import User, User_Pydantic
 
 router = APIRouter(prefix="/user", tags=["User"])
 
 
 @router.patch("/sync_clicks")
-async def sync_clicks(req: SyncClicksRequest, credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def sync_clicks(req: SyncClicksRequest, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт синхронизации кликов. Сколько бы кликов не отправили, все обрезается энергией, на счету у
     пользователя и дневными ограничениями.
     :param req: request объект с кол-вом кликов SyncClicksRequest
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
 
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("rank", "stats", "activity").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("rank", "stats", "activity").first()
 
     await sync_energy(user)
 
@@ -49,16 +49,16 @@ async def sync_clicks(req: SyncClicksRequest, credentials: JwtAuth = Security(AC
 
 @router.patch("/bonus/sync_inspiration_clicks")
 async def sync_inspiration_clicks(req: SyncClicksRequest,
-                                        credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+                                  init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт синхронизации кликов под бустером - вдохновение. Сколько бы кликов не отправили,
     все обрезается по формуле user.rank.max_energy * 1.2.
     :param req: request объект с кол-вом кликов SyncClicksRequest
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rank").first()
     max_extraction = int(user.rank.max_energy * 1.2)  # максимум можно заработать max_energy + 20%
 
     await sync_energy(user)
@@ -92,14 +92,14 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
 
 
 @router.post("/bonus/replenishment")
-async def use_replenishment(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def use_replenishment(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на использование бустера - прилива, полностью востанавливает энергию игрока.
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("activity", "stats", "rank").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rank").first()
 
     if user.rank.id < 3:
         return CustomJSONResponse(message="Маловат ранг.",
@@ -122,14 +122,14 @@ async def use_replenishment(credentials: JwtAuth = Security(ACCESS_SECURITY)) ->
 
 @router.get("/profile")
 @cache(expire=30)
-async def get_user_profile(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение данных игрока.
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).prefetch_related("activity", "stats", "rank", "leads",
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).prefetch_related("activity", "stats", "rank", "leads",
                                                         "rewards", "leader_place").first()
 
     from_orm = await User_Pydantic.from_tortoise_orm(user)

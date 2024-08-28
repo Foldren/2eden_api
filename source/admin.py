@@ -28,8 +28,7 @@ class UserView(TortoiseModelView):
     icon = "fa fa-user"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
-        StringField("chat_id"),
+        IntegerField("id", label="Chat ID"),
         StringField("country"),
         StringField("referral_code")
     )

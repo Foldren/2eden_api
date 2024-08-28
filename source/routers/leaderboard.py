@@ -1,9 +1,10 @@
-from fastapi import Security, APIRouter
+from typing import Annotated
+from aiogram.utils.web_app import WebAppInitData
+from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
-from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
 from components.app.responses import CustomJSONResponse
-from config import ACCESS_SECURITY
+from components.tools import validate_telegram_hash
 from db_models.api import Stats, User, Rank
 
 router = APIRouter(prefix="/user", tags=["User"])
@@ -11,11 +12,11 @@ router = APIRouter(prefix="/user", tags=["User"])
 
 @router.get("/leaderboard")
 @cache(expire=30)
-async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def get_leaderboard(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю)
     earned_week_coins обнуляется и начисляет награды в воскресенье в таск менеджере (отдельный сервис).
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
     users_stats = (await Stats.all()
@@ -30,14 +31,14 @@ async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> C
 
 
 @router.patch("/promote")
-async def update_rank(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+async def update_rank(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для повышения ранга (если хватает монет).
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("stats", "rank").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("stats", "rank").first()
 
     if user.rank.id >= 20:
         return CustomJSONResponse(message="У вас максимальный ранг.",

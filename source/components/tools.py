@@ -1,14 +1,14 @@
 from datetime import timedelta, datetime
-from typing import Any
+from typing import Annotated
+from aiogram.utils.web_app import safe_parse_webapp_init_data, WebAppInitData
+from fastapi import HTTPException, Header
 from httpx import Response
 from pytz import timezone
 from components import enums
 from components.enums import VisibilityType
-from components.app.responses import CustomJSONResponse
-from config import REFRESH_SECURITY, ACCESS_SECURITY
+from config import TOKEN
 from db_models.api import User, Reward, Task, RankVisibility
-# from http.cookies import SimpleCookie
-# from ratelimit.types import Scope, ASGIApp
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 
 async def get_daily_reward(user_id: str) -> None:
@@ -123,28 +123,6 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
         await Reward.create(user_id=referrer_upper_id, type_name=enums.RewardTypeName.REFERRAL, amount=income_1_perc)
 
 
-# async def pydantic_from_queryset(pydantic_model: PydanticListModel, qs: QuerySet) -> tuple[dict[str, Any]]:
-#     """
-#     Функция для преобразования запроса QuerySet в tuple[dict]. Для преобразования 1+? записей из бд.
-#     :param pydantic_model: Pydantic модель бд
-#     :param qs: QuerySet к бд
-#     :return:
-#     """
-#     from_qs = await pydantic_model.from_queryset(qs)
-#     return from_qs.model_dump()
-#
-#
-# async def pydantic_from_model(pydantic_model: PydanticModel, orm_model: Model) -> dict[str, Any]:
-#     """
-#     Функция для преобразования ORM модели в dict. Для преобразования одной записи из бд.
-#     :param pydantic_model: Pydantic модель бд
-#     :param orm_model: ORM модель бд
-#     :return:
-#     """
-#     from_orm = await pydantic_model.from_tortoise_orm(orm_model)
-#     return from_orm.model_dump()
-
-
 async def sync_energy(user: User) -> None:
     """
     Функция для синхронизации энергии. Обновляет дату синхронизации и меняет кол-во энергии.
@@ -176,27 +154,6 @@ async def check_task_visibility(task: Task, user: User):
     return False
 
 
-async def get_jwt_cookie_response(payload: dict[str, Any], status_code: int,
-                                  message: str | None = None) -> CustomJSONResponse:
-    """
-    Функция для генерции JSONResponse с куками (access, refresh tokens).
-    :param payload: payload для токена
-    :param status_code: статус код
-    :param message: сообщение на вывод
-    :return:
-    """
-    access_token = ACCESS_SECURITY.create_access_token(subject=payload)
-    refresh_token = REFRESH_SECURITY.create_refresh_token(subject=payload)
-
-    data = {"access_token": access_token, "refresh_token": refresh_token}
-    response = CustomJSONResponse(message=message, data=data, status_code=status_code)
-
-    ACCESS_SECURITY.set_access_cookie(response, access_token)
-    REFRESH_SECURITY.set_refresh_cookie(response, refresh_token)
-
-    return response
-
-
 async def assert_status_code(response: Response, status_code: int) -> None:
     """
     Функция для быстрой генерации assert по status code, для тестов.
@@ -208,30 +165,20 @@ async def assert_status_code(response: Response, status_code: int) -> None:
     print(frmt_text)  # Это нужный вывод
 
 
-# async def handle_auth_error(exc: Exception) -> ASGIApp:
-#     """
-#     Хендлер на ошибку функции мониторина активности юзеров.
-#     :param exc: объект Exception
-#     :return:
-#     """
-#     return CustomJSONResponse({"message": "Incorrect headers."}, status_code=409)
-#
-#
-# async def auth_function(scope: Scope) -> Tuple[str, str]:
-#     """
-#     Функция для мониторинга активности юзеров для RateLimitMiddleWare,
-#     берет id юзера из access_token cookies, блокирует на 30 секунд, если он ддосит
-#     :param scope: объект request scope
-#     :return:
-#     """
-#     dict_headers = dict(scope["headers"])
-#     user_ip = dict_headers[b'x-real-ip'].decode("utf-8")
-#     # raw_cookies = dict_headers[b"cookie"].decode("utf-8")
-#     # cookies = SimpleCookie()
-#     # cookies.load(raw_cookies)
-#     # at = cookies["refresh_token_cookie"].value.encode()
-#     # user = jwt.decode(jwt=at, key=JWT_SECRET, algorithms=JWT_ALGORITHM, options={"verify_exp": False})
-#
-#     # возвращаем user, group
-#     # user['subject']['user']
-#     return user_ip, 'default'
+async def validate_telegram_hash(x_telegram_init_data: Annotated[str | None, Header()]) -> WebAppInitData:
+    """
+    Fastapi Depend для валидации telegram hash юзера, возвращает init_data, если все окей.
+    :param x_telegram_init_data: заголовок с window.Telegram.WebApp.initData
+    :return:
+    """
+    # Валидируем init data tg юзера
+    try:
+        init_data = safe_parse_webapp_init_data(token=TOKEN, init_data=x_telegram_init_data)
+        user = await User.filter(id=init_data.user.id).select_related("activity", "stats", "rank").first()
+        await get_daily_reward(user.id)  # получаем ежедневную награду за вход
+        await sync_energy(user)  # синхронизируем энергию
+
+        return init_data
+
+    except:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Данные юзера Telegram не валидны.")
