@@ -34,7 +34,7 @@ HOST = "127.0.0.1" if IS_THIS_LOCAL else "0.0.0.0"
 # 1 поток -> redis
 # ~1 поток -> nginx
 
-PSQL_CPUS = 1 if IS_THIS_LOCAL else 5  # RPS = PSQL_CPUS * 100 (500)
+PSQL_CPUS = 1 if IS_THIS_LOCAL else 1  # RPS = PSQL_CPUS * 100 (5 = 500)
 
 TORTOISE_CONFIG = {
     "connections": {
