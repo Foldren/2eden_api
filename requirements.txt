@@ -16,3 +16,4 @@ PyJWT==2.9.0
 itsdangerous==2.2.0
 PyYAML==6.0.2
 asyncpg==0.29.0
+aiogram==3.12.0
