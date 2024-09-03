@@ -39,8 +39,8 @@ services:
     environment:
       - TZ=Europe/Moscow
     depends_on:
-      - psql
-      - redis
+      - db
+      - cache
     ports:
       - 127.0.0.1:18000:8000
     networks:
@@ -55,7 +55,7 @@ services:
     environment:
       - TZ=Europe/Moscow
     depends_on:
-      - fastapi
+      - api
     ports:
       - 180:80
       - 1443:443
