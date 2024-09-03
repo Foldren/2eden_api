@@ -1,16 +1,15 @@
 from datetime import timedelta, datetime
-from typing import Annotated
 from aiogram.utils.web_app import safe_parse_webapp_init_data, WebAppInitData
-from fastapi import HTTPException, Header, Depends, Security
-from fastapi.security import HTTPAuthorizationCredentials, APIKeyHeader
+from fastapi import HTTPException, Security
+from fastapi.security import APIKeyHeader
 from httpx import Response
 from pydantic import BaseModel
 from pytz import timezone
+from starlette.status import HTTP_401_UNAUTHORIZED
 from components import enums
 from components.enums import VisibilityType
-from config import TOKEN, TG_AUTH_SCHEMA
+from config import TOKEN
 from db_models.api import User, Reward, Task, RankVisibility
-from starlette.status import HTTP_401_UNAUTHORIZED
 
 
 async def get_daily_reward(user_id: str) -> None:

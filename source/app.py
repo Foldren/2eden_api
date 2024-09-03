@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import UJSONResponse, RedirectResponse
+from fastapi.responses import UJSONResponse
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette_admin import BaseAdmin, DropDown
@@ -18,7 +18,7 @@ from routers import synchronization, mining, rewarding, leaderboard, tasks
 # db10 - Кеш fastapi_cache
 
 # Ставим самый быстрый декодер Ujson
-app = FastAPI(default_response_class=UJSONResponse)
+app = FastAPI(default_response_class=UJSONResponse, root_path="/api")
 
 # Подключаем Tortoise ORM
 register_tortoise(app=app,
@@ -43,12 +43,6 @@ app.include_router(mining.router)
 app.include_router(rewarding.router)
 app.include_router(leaderboard.router)
 app.include_router(tasks.router)
-
-
-@app.get("/")
-async def index():
-    return RedirectResponse("/docs")
-
 
 # Настраиваем админку
 admin = BaseAdmin(title="2Eden Admin",
