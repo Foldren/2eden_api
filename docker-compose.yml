@@ -67,3 +67,4 @@ services:
 
 networks:
   2eden_network:
+    name: 2eden_network
