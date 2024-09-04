@@ -184,12 +184,12 @@ async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHead
     # Валидируем init data tg юзера
     try:
         init_data = safe_parse_webapp_init_data(token=TOKEN, init_data=x_telegram_init_data)
-        user = await User.filter(id=init_data.user.id).select_related("activity", "stats", "rank").first()
+        user = await User.filter(id=init_data.user.id).first()
 
-        return init_data
-
-    except AttributeError:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Для начала работы нажмите /start.")
+        if user:
+            return init_data
+        else:
+            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Для начала работы нажмите /start.")
 
     except ValueError:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Данные юзера Telegram не валидны.")
