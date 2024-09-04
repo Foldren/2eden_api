@@ -25,9 +25,9 @@ async def sync_clicks(req: SyncClicksRequest, init_data: Annotated[WebAppInitDat
     """
 
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
-    user = await User.filter(id=user_chat_id).select_related("rank", "stats", "activity").first()
+    user = await User.filter(id=user_chat_id).select_related("rank", "stats", "activity", "rewards").first()
 
-    await get_daily_reward(user.id)  # получаем ежедневную награду за вход
+    await get_daily_reward(user)  # получаем ежедневную награду за вход
     await sync_energy(user)  # синхронизируем энергию
 
     if user.stats.energy < user.rank.press_force:
@@ -129,8 +129,8 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
 
-    user = await User.filter(id=user_chat_id).first()
-    await get_daily_reward(user.id)  # получаем ежедневную награду за вход
+    user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rewards").first()
+    await get_daily_reward(user)  # получаем ежедневную награду за вход
     await sync_energy(user)  # синхронизируем энергию
 
     user = await User.filter(id=user_chat_id).prefetch_related("activity", "stats", "rank", "leads",

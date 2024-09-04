@@ -15,13 +15,11 @@ except ImportError:
 from db_models.api import User, Reward, Task, RankVisibility
 
 
-async def get_daily_reward(user_id: str) -> None:
+async def get_daily_reward(user: User) -> None:
     """
     Функция для получения награды за серию авторизаций в игре.
-    :param user_id: айди авторизовавшегося юзера
+    :param user: User авторизовавшегося юзера с "activity", "rank", "rewards"
     """
-    user = await User.filter(id=user_id).select_related("activity", "rank", "rewards").first()
-
     dt_after_get_rw = datetime.fromisoformat(user.activity.last_daily_reward.isoformat()).replace(
         tzinfo=timezone("Europe/Moscow"))
     dt_last_login = datetime.fromisoformat(user.activity.last_login_date.isoformat()).replace(
