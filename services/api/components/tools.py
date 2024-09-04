@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 from httpx import Response
 from pydantic import BaseModel
 from pytz import timezone
-from starlette.status import HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from components import enums
 from components.enums import VisibilityType
 from config import TOKEN
@@ -189,5 +189,8 @@ async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHead
 
         return init_data
 
-    except:
+    except AttributeError:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Для начала работы нажмите /start.")
+
+    except ValueError:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Данные юзера Telegram не валидны.")

@@ -1,38 +1,17 @@
 from datetime import datetime, timedelta
-from typing import Dict, Any
 import pytest
 from httpx import AsyncClient
 from pytz import timezone
 from starlette.status import HTTP_200_OK
-from components import assert_status_code
+from components.tools import assert_status_code
 from db_models.api import User, Activity, Stats, Reward
 import params
 
 
-@pytest.mark.parametrize("data, variant, status_code", params.register_params)
-async def test_register(client: AsyncClient, data: Dict[str, Any], variant: str, status_code: int) -> None:
-    match variant:
-        case "no_referral_code":
-            response = await client.post(url="/auth/registration", json=data)
-        case "referral_code":
-            referrer = await User.first()
-            data["referral_code"] = referrer.referral_code
-            response = await client.post(url="/auth/registration", json=data)
-        case _:
-            response = await client.post(url="/auth/registration", json=data)
-
+@pytest.mark.parametrize("init_data, status_code", params.login_params)
+async def test_init_data(client: AsyncClient, init_data: str, status_code: int) -> None:
+    response = await client.get(url="/user/profile", headers={"X-Telegram-Init-Data": init_data})
     await assert_status_code(response, status_code)
-
-
-@pytest.mark.parametrize("data, variant, status_code", params.login_params)
-async def test_login(client: AsyncClient, data: Dict[str, Any], variant: str, status_code: int) -> None:
-    response = await client.post(url="/auth/login", json=data)
-    await assert_status_code(response, status_code)
-
-
-async def test_refresh(client: AsyncClient) -> None:
-    response = await client.patch(url="/auth/refresh")
-    await assert_status_code(response, HTTP_200_OK)
 
 
 async def test_get_leaderboard(client: AsyncClient) -> None:

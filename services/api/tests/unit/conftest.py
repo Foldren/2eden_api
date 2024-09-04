@@ -9,6 +9,10 @@ pytest_plugins = ("pytest_asyncio",)
 client_url = "http://127.0.0.1:8000/api"
 drop_db = True
 db_url = "sqlite://:memory:" if drop_db else "sqlite:///test.db"
+init_data = ("query_id=AAGdJCdOAgAAAJ0kJ04fz7iU&user=%7B%22id%22%3A5606155421%2C%22first_name%22%3A%22Anna%22%2C%22"
+             "last_name%22%3A%22%22%2C%22username%22%3A%22sobored19%22%2C%22language_code%22%3A%22en%22%2C%22allows"
+             "_write_to_pm%22%3Atrue%7D&auth_date=1725299335&hash=41a8bd9bc9158a428d43ca95e3a1bd76accf840d395eea60"
+             "eea2316733d864f3")
 
 
 @pytest_asyncio.fixture(scope='session')
