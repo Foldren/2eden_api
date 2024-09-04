@@ -6,7 +6,7 @@ from app import app
 from init import init
 
 pytest_plugins = ("pytest_asyncio",)
-client_url = "http://127.0.0.1:8000"
+client_url = "http://127.0.0.1:8000/api"
 drop_db = True
 db_url = "sqlite://:memory:" if drop_db else "sqlite:///test.db"
 
