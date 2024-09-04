@@ -56,6 +56,7 @@ services:
       - TZ=Europe/Moscow
     depends_on:
       - api
+    tty: true
     networks:
       - 2eden_network
     volumes:
