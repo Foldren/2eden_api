@@ -8,7 +8,10 @@ from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin import UserView, RankView, ActivityView, RewardsView, StatsView
 from components.admin.auth import CustomAuthProvider
-from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
+try:
+    from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
+except ImportError:
+    from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
 from db_models.api import User, Rank, Stats, Activity, Reward
 try:
     from init import init
