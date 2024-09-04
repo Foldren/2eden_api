@@ -38,13 +38,13 @@ async def update_rank(init_data: Annotated[WebAppInitData, Depends(validate_tele
     :return:
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
-    user = await User.filter(id=user_chat_id).select_related("stats", "rank").first()
+    user = await User.filter(id=user_chat_id).select_related("stats").first()
 
-    if user.rank.id >= 20:
+    if user.rank_id >= 20:
         return CustomJSONResponse(message="У вас максимальный ранг.",
                                   status_code=status.HTTP_409_CONFLICT)
 
-    next_rank = await Rank.filter(id=(user.rank.id + 1)).first()
+    next_rank = await Rank.filter(id=(user.rank_id + 1)).first()
 
     if user.stats.coins < next_rank.price:
         return CustomJSONResponse(message="Не хватает монет для повышения.",

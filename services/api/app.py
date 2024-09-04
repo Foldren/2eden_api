@@ -8,9 +8,12 @@ from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin import UserView, RankView, ActivityView, RewardsView, StatsView
 from components.admin.auth import CustomAuthProvider
-from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
+from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
 from db_models.api import User, Rank, Stats, Activity, Reward
-from init import init
+try:
+    from init import init
+except ImportError:
+    from services.api.init import init
 from routers import synchronization, mining, rewarding, leaderboard, tasks
 
 # Используемые базы данных Redis

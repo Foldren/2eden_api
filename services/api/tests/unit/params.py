@@ -1,7 +1,7 @@
 from pytest import param
 from starlette.status import (HTTP_409_CONFLICT, HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED,
                               HTTP_208_ALREADY_REPORTED, HTTP_201_CREATED, HTTP_401_UNAUTHORIZED)
-from conftest import init_data
+from services.api.tests.unit.conftest import init_data
 
 register_params = (
     param({"chat_id": 1, "token": "1", "country": "ru"}, "no_referral_code", HTTP_201_CREATED,

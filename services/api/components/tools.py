@@ -8,7 +8,10 @@ from pytz import timezone
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from components import enums
 from components.enums import VisibilityType
-from config import TOKEN
+try:
+    from config import TOKEN
+except ImportError:
+    from services.api.config import TOKEN
 from db_models.api import User, Reward, Task, RankVisibility
 
 
@@ -184,8 +187,6 @@ async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHead
     try:
         init_data = safe_parse_webapp_init_data(token=TOKEN, init_data=x_telegram_init_data)
         user = await User.filter(id=init_data.user.id).select_related("activity", "stats", "rank").first()
-        await get_daily_reward(user.id)  # получаем ежедневную награду за вход
-        await sync_energy(user)  # синхронизируем энергию
 
         return init_data
 

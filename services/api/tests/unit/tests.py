@@ -5,13 +5,20 @@ from pytz import timezone
 from starlette.status import HTTP_200_OK
 from components.tools import assert_status_code
 from db_models.api import User, Activity, Stats, Reward
-import params
+import services.api.tests.unit.params as params
 
 
 @pytest.mark.parametrize("init_data, status_code", params.login_params)
 async def test_init_data(client: AsyncClient, init_data: str, status_code: int) -> None:
-    response = await client.get(url="/user/profile", headers={"X-Telegram-Init-Data": init_data})
-    await assert_status_code(response, status_code)
+    client.headers["X-Telegram-Init-Data"] = init_data
+    response = await client.get(url="/user/profile")
+
+    if init_data == "invalid":
+        frmt_text = f"[Message: {response.json()["detail"]}]"
+    else:
+        frmt_text = f"[Message: {response.json()["message"]["text"]}]"
+
+    assert response.status_code == status_code, frmt_text
 
 
 async def test_get_leaderboard(client: AsyncClient) -> None:
@@ -25,7 +32,9 @@ async def test_update_rank(client: AsyncClient, variant: str, status_code: int) 
         case "with_coins":
             await Stats.filter(id=1).update(coins=99999999999)
         case "with_max_rank":
-            await User.filter(id=1).update(rank_id=20)
+            user = await User.filter(id=1).first()
+            user.rank_id = 20
+            await user.save()
 
     response = await client.patch(url="/user/promote")
     await assert_status_code(response, status_code)

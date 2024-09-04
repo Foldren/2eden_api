@@ -8,7 +8,7 @@ from pytz import timezone
 from starlette import status
 from components.app.requests import SyncClicksRequest
 from components.app.responses import CustomJSONResponse
-from components.tools import sync_energy, validate_telegram_hash
+from components.tools import sync_energy, validate_telegram_hash, get_daily_reward
 from db_models.api import User, User_Pydantic
 
 router = APIRouter(prefix="/user", tags=["User"])
@@ -27,7 +27,8 @@ async def sync_clicks(req: SyncClicksRequest, init_data: Annotated[WebAppInitDat
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
     user = await User.filter(id=user_chat_id).select_related("rank", "stats", "activity").first()
 
-    await sync_energy(user)
+    await get_daily_reward(user.id)  # получаем ежедневную награду за вход
+    await sync_energy(user)  # синхронизируем энергию
 
     if user.stats.energy < user.rank.press_force:
         return CustomJSONResponse(message="Не хватает энергии.",
@@ -60,8 +61,6 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
     user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rank").first()
     max_extraction = int(user.rank.max_energy * 1.2)  # максимум можно заработать max_energy + 20%
-
-    await sync_energy(user)
 
     if user.rank.id < 2:
         return CustomJSONResponse(message="Маловат ранг.",
@@ -129,6 +128,11 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
     :return:
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+
+    user = await User.filter(id=user_chat_id).first()
+    await get_daily_reward(user.id)  # получаем ежедневную награду за вход
+    await sync_energy(user)  # синхронизируем энергию
+
     user = await User.filter(id=user_chat_id).prefetch_related("activity", "stats", "rank", "leads",
                                                         "rewards", "leader_place").first()
 
