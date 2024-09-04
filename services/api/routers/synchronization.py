@@ -129,7 +129,7 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
 
-    user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rewards").first()
+    user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rewards", "rank").first()
     await get_daily_reward(user)  # получаем ежедневную награду за вход
     await sync_energy(user)  # синхронизируем энергию
 
