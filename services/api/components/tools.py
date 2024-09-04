@@ -34,26 +34,26 @@ async def get_daily_reward(user: User) -> None:
 
         match user.activity.active_days:
             case 1:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=500)
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=500)
             case 2:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000)
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000)
             case 3:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=1)
             case 4:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=1, replenishments=1)
             case 5:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=1000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=2, replenishments=1)
             case 6:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=5000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=5000,
                                     inspirations=2, replenishments=2)
             case 7:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=10000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=10000,
                                     inspirations=2, replenishments=2)
             case _:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user_id, amount=10000,
+                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=10000,
                                     inspirations=2, replenishments=2)
 
     if timedelta(days=2) <= time_d_after_login:
