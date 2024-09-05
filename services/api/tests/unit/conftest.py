@@ -1,3 +1,4 @@
+from asyncio import get_event_loop
 from typing import AsyncIterator
 import pytest_asyncio
 from httpx import AsyncClient
@@ -28,13 +29,18 @@ async def init_db():
     await Tortoise.init(db_url=db_url, modules={'api': ['db_models.api']}, _create_db=True,
                         use_tz=True, timezone='Europe/Moscow')
     await Tortoise.generate_schemas()
-    await init(pytest=True)
+    await init(enable_cache=False)
 
     # Создаем юзера
     user = await User.create(id=chat_id, country="RU", rank_id=1)
     await Stats.create(user_id=user.id)
     await Activity.create(user_id=user.id)
     yield
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def event_loop():
+    return get_event_loop()
 
 
 @pytest_asyncio.fixture(scope='session')

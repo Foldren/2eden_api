@@ -57,6 +57,26 @@ TORTOISE_CONFIG = {
     'timezone': 'Europe/Moscow'
 }
 
+LOCUST_T_CONFIG = {
+    "connections": {
+        "api": {
+            "engine": "tortoise.backends.asyncpg",
+            "credentials": {
+                "user": PG_CONFIG["user"],
+                "password": PG_CONFIG["psw"],
+                "host": "127.0.0.1",
+                "port": "15432",
+                "database": PG_CONFIG["db"]
+            }
+        }
+    },
+    "apps": {
+        "api": {"models": ["db_models.api"], "default_connection": "api"},
+    },
+    'use_tz': True,
+    'timezone': 'Europe/Moscow'
+}
+
 # Read access token from bearer header and cookie (bearer priority)
 ACCESS_SECURITY = JwtAccessBearerCookie(
     secret_key=JWT_SECRET,

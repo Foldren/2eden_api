@@ -1,6 +1,5 @@
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.backends.inmemory import InMemoryBackend
 from redis.asyncio import from_url
 from components.app.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
@@ -9,13 +8,12 @@ from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, I
     RankVisibility
 
 
-async def init_cache(pytest: bool = False) -> None:
+async def init_cache(enable: bool = True) -> None:
     """
     Функция инициализации кеша.
     """
     redis = await from_url(REDIS_URL, db=10, encoding="utf-8", decode_responses=False)
-    backend = InMemoryBackend() if pytest else RedisBackend(redis)
-    FastAPICache.init(backend=backend, prefix="fastapi-cache", coder=UJsonCoder)
+    FastAPICache.init(backend=RedisBackend(redis), prefix="fastapi-cache", coder=UJsonCoder, enable=enable)
 
 
 async def create_necessary_db_objects() -> None:
@@ -101,9 +99,9 @@ async def create_necessary_db_objects() -> None:
         )
 
 
-async def init(pytest: bool = False) -> None:
+async def init(enable_cache: bool = True) -> None:
     """
     Функция инициализации SQL дб, Redis, Admin, выполнение миграций.
     """
-    await init_cache(pytest)  # инициализируем кеш
+    await init_cache(enable_cache)  # инициализируем кеш
     await create_necessary_db_objects()  # создаем записи бд при необходимости

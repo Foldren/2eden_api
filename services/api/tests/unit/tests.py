@@ -99,7 +99,8 @@ async def test_get_reward(client: AsyncClient, variant: str, status_code: int) -
         case "without_rewards":
             response = await client.post(url="/reward", json={"reward_id": 2})
         case "with_someone_else_reward":
-            reward = await Reward.create(user_id=chat_id)
+            user = await User.create(country="RU")
+            reward = await Reward.create(user_id=user.id)
             response = await client.post(url="/reward", json={"reward_id": reward.id})
         case _:
             reward = await Reward.create(user_id=chat_id)

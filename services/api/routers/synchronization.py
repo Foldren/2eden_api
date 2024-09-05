@@ -129,12 +129,10 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
 
-    user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rewards", "rank").first()
-    await get_daily_reward(user)  # получаем ежедневную награду за вход
-    await sync_energy(user)  # синхронизируем энергию
-
     user = await User.filter(id=user_chat_id).prefetch_related("activity", "stats", "rank", "leads",
                                                         "rewards", "leader_place").first()
+    await get_daily_reward(user)  # получаем ежедневную награду за вход
+    await sync_energy(user)  # синхронизируем энергию
 
     from_orm = await User_Pydantic.from_tortoise_orm(user)
     user_dump = from_orm.model_dump(mode='json')  # Мод как решение проблемы с сериализацией даты
