@@ -14,7 +14,7 @@ from db_models.api import User, User_Pydantic
 router = APIRouter(prefix="/user", tags=["User"])
 
 
-@router.patch("/sync_clicks")
+@router.patch(path="/sync_clicks", description="Эндпойнт синхронизации кликов. Сколько бы кликов не отправили, все обрезается энергией, на счету у пользователя и дневными ограничениями.")
 async def sync_clicks(req: SyncClicksRequest, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт синхронизации кликов. Сколько бы кликов не отправили, все обрезается энергией, на счету у
@@ -48,7 +48,7 @@ async def sync_clicks(req: SyncClicksRequest, init_data: Annotated[WebAppInitDat
     return CustomJSONResponse(message="Синхронизация завершена.")
 
 
-@router.patch("/bonus/sync_inspiration_clicks")
+@router.patch(path="/bonus/sync_inspiration_clicks", description="Эндпойнт синхронизации кликов под бустером - вдохновение. Сколько бы кликов не отправили, все обрезается по формуле user.rank.max_energy * 1.2.")
 async def sync_inspiration_clicks(req: SyncClicksRequest,
                                   init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
@@ -90,7 +90,7 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
     return CustomJSONResponse(message="Вдохновение активировано.")
 
 
-@router.post("/bonus/replenishment")
+@router.post(path="/bonus/replenishment", description="Эндпойнт на использование бустера - прилива, полностью востанавливает энергию игрока.")
 async def use_replenishment(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на использование бустера - прилива, полностью востанавливает энергию игрока.
@@ -119,7 +119,7 @@ async def use_replenishment(init_data: Annotated[WebAppInitData, Depends(validat
     return CustomJSONResponse(message="Прилив энергии активирован.")
 
 
-@router.get("/profile")
+@router.get(path="/profile", description="Эндпойнт на получение данных игрока.")
 @cache(expire=30)
 async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """

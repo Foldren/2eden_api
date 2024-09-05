@@ -11,7 +11,7 @@ from db_models.api import User
 router = APIRouter(prefix="/mining", tags=["Mining"])
 
 
-@router.post("/start")
+@router.post(path="/start", description="Эндпойнт для начала майнинга. Изменяет время старта.")
 async def start_mining(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для начала майнинга. Изменяет время старта.
@@ -42,7 +42,7 @@ async def start_mining(init_data: Annotated[WebAppInitData, Depends(validate_tel
                               status_code=status.HTTP_202_ACCEPTED)
 
 
-@router.post("/claim")
+@router.post(path="/claim", description="Эндпойнт для окончания майнинга.")
 async def end_mining(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для окончания майнинга.

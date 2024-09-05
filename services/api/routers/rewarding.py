@@ -11,7 +11,7 @@ from db_models.api import Reward, Stats
 router = APIRouter(prefix="/reward", tags=["Reward"])
 
 
-@router.get("/list")
+@router.get(path="/list", description="Эндпойнт на получение списка наград юзера (приглашение, серия авторизаций, таск, лидерборд, реферал)")
 @cache(expire=30)
 async def get_reward_list(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
@@ -30,7 +30,7 @@ async def get_reward_list(init_data: Annotated[WebAppInitData, Depends(validate_
     return CustomJSONResponse(data={"rewards": rewards_values}, message="Выведен список вознаграждений.")
 
 
-@router.post("")
+@router.post(path="", description="Эндпойнт на получение награды по ID (приглашение, серия авторизаций, таск, лидерборд, реферал)")
 async def get_reward(req: GetRewardRequest,
                      init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """

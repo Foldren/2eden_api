@@ -1,18 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.responses import UJSONResponse
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.staticfiles import StaticFiles
 from starlette_admin import BaseAdmin, DropDown
 from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin import UserView, RankView, ActivityView, RewardsView, StatsView
 from components.admin.auth import CustomAuthProvider
+
 try:
     from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
 except ImportError:
     from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
 from db_models.api import User, Rank, Stats, Activity, Reward
+
 try:
     from init import init
 except ImportError:
@@ -24,13 +28,22 @@ from routers import synchronization, mining, rewarding, leaderboard, tasks
 # db10 - Кеш fastapi_cache
 
 # Ставим самый быстрый декодер Ujson
-app = FastAPI(default_response_class=UJSONResponse, root_path="/api")
+app = FastAPI(title="2Eden API - Swagger UI",
+              default_response_class=UJSONResponse,
+              root_path="/api")
+
 
 # Подключаем Tortoise ORM
 register_tortoise(app=app,
                   config=TORTOISE_CONFIG,
                   generate_schemas=True,
                   add_exception_handlers=True)
+
+# @app.exception_handler(HTTPException)
+# async def http_exception_handler(request: Request, exc: HTTPException):
+#     return CustomJSONResponse(message=exc.detail,
+#                               status_code=exc.status_code)
+
 
 # Добавляем cors middleware
 app.add_middleware(
@@ -62,7 +75,6 @@ admin.add_view(DropDown("Пользователи",
                                StatsView(Stats), RewardsView(Reward)]))
 
 admin.mount_to(app)
-
 
 if __name__ == "__main__":
     # workers = число потоков (1 процесс = 1 поток)

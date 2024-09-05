@@ -13,6 +13,11 @@ from db_models.api import User, Activity, Stats
 
 # Количество пользователей
 number_users = 4600
+init_data = (f"query_id=AAGdJCdOAgAAAJ0kJ04EMHZk&user=%7B%22id%22%3A5606155421%2C%22first_name%22%3A%22Anna"
+             f"%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22sobored19%22%2C%22language_code%22%3A%2"
+             f"2en%22%2C%22allows_write_to_pm%22%3Atrue%7D&auth_date=1725451498&hash=c2f6fe2f69777ed02138b1"
+             f"3a25896c226aaeb20d72d49b588cfe265a292fa232")
+user_id = 5606155421
 
 
 class Api2EdenUser(HttpUser):
@@ -23,36 +28,7 @@ class Api2EdenUser(HttpUser):
         """
         На старте авторизуем юзера
         """
-        idt = (f"query_id=AAGdJCdOAgAAAJ0kJ04EMHZk&"
-               f"user={random.randint(1, number_users)}"
-               f"first_name%22%3A%22Anna%22%2C%22"
-               f"last_name%22%3A%22%22%2C%22"
-               f"username%22%3A%22sobored19%22%2C%22"
-               f"language_code%22%3A%22en%22%2C%22"
-               f"allows_write_to_pm%22%3Atrue%7D&"
-               f"auth_date=1725451498&"
-               f"hash=c2f6fe2f69777ed02138b13a25896c226aaeb20d72d49b588cfe265a292fa232")
-
-        parsed_data = dict(parse_qsl(idt, strict_parsing=True))
-        data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed_data.items(), key=itemgetter(0)))
-        secret_key = hmac.new(key=b"WebAppData", msg=TOKEN.encode(), digestmod=hashlib.sha256)
-        calculated_hash = hmac.new(key=secret_key.digest(), msg=data_check_string.encode(), digestmod=hashlib.sha256).hexdigest()
-
-        idt = (f"query_id=AAGdJCdOAgAAAJ0kJ04EMHZk&"
-         f"user={random.randint(1, number_users)}"
-         f"first_name%22%3A%22Anna%22%2C%22"
-         f"last_name%22%3A%22%22%2C%22"
-         f"username%22%3A%22sobored19%22%2C%22"
-         f"language_code%22%3A%22en%22%2C%22"
-         f"allows_write_to_pm%22%3Atrue%7D&"
-         f"auth_date=1725451498&"
-         f"hash={calculated_hash}")
-
-        self.client.headers["X-Telegram-Init-Data"] = idt
-
-    @task(1)
-    def refresh(self) -> None:
-        self.client.patch("/auth/refresh")
+        self.client.headers["X-Telegram-Init-Data"] = init_data
 
     @task(23)
     def get_leaderboard(self) -> None:
@@ -98,30 +74,30 @@ class Api2EdenUser(HttpUser):
         self.client.get("/user/profile")
 
 
-# async def create_users() -> None:
-#     await Tortoise.init(config=LOCUST_T_CONFIG)
-#     await Tortoise.generate_schemas()
-#
-#     for i in range(1, number_users):
-#         user = await User.create(country="RU")
-#         await Stats.create(user_id=user.id)
-#         await Activity.create(user_id=user.id)
-#         await sleep(0.01)
-#
-#
-# async def drop_database() -> None:
-#     await Tortoise.init(config=LOCUST_T_CONFIG)
-#     await Tortoise._drop_databases()
-#
-#
-# @events.test_start.add_listener
-# def on_startup(environment: Environment, **kwargs) -> None:
-#     run(create_users())
-#
-#
-# @events.test_stop.add_listener
-# def on_shutdown(environment: Environment, **kwargs) -> None:
-#     run(drop_database())
+async def create_user() -> None:
+    await Tortoise.init(config=LOCUST_T_CONFIG)
+    await Tortoise.generate_schemas()
+
+    # Создаем юзера для тестов в бд, будем работать с одним init_data
+    await User.create(id=user_id, country="RU")
+    await Stats.create(user_id=user_id)
+    await Activity.create(user_id=user_id)
+    await sleep(0.01)
+
+
+async def drop_database() -> None:
+    await Tortoise.init(config=LOCUST_T_CONFIG)
+    await Tortoise._drop_databases()
+
+
+@events.test_start.add_listener
+def on_startup(environment: Environment, **kwargs) -> None:
+    run(create_user())
+
+
+@events.test_stop.add_listener
+def on_shutdown(environment: Environment, **kwargs) -> None:
+    run(drop_database())
 
 
 if __name__ == '__main__':

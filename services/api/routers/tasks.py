@@ -14,7 +14,7 @@ from db_models.api import User, Task, VisitLinkCondition, TgChannelCondition, Us
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-@router.get("/available")
+@router.get(path="/available", description="Метод для получения списка доступных задач.")
 @cache(expire=30)
 async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
@@ -33,7 +33,7 @@ async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegr
     return CustomJSONResponse(data={"tasks": filtered_tasks})
 
 
-@router.post("/start/{task_id}")
+@router.post(path="/start/{task_id}", description="Метод для начала Таска. Создает для пользователя задачу для выполнения.")
 async def take_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
     Метод для начала Таска. Создает для пользователя задачу для выполнения.
@@ -64,7 +64,7 @@ async def take_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(v
                               status_code=status.HTTP_201_CREATED)
 
 
-@router.post("/complete/{task_id}")
+@router.post(path="/complete/{task_id}", description="Метод для завершения задачи. Отмечает задачу как выполненную.")
 async def complete_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
     Метод для завершения задачи. Отмечает задачу как выполненную.

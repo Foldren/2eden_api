@@ -10,7 +10,7 @@ from db_models.api import Stats, User, Rank
 router = APIRouter(prefix="/user", tags=["User"])
 
 
-@router.get("/leaderboard")
+@router.get(path="/leaderboard", description="Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю) earned_week_coins обнуляется и начисляет награды в воскресенье в таск менеджере (отдельный сервис).")
 @cache(expire=30)
 async def get_leaderboard(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
@@ -30,7 +30,7 @@ async def get_leaderboard(init_data: Annotated[WebAppInitData, Depends(validate_
                               message="Выведен список лидеров на текущую неделю.")
 
 
-@router.patch("/promote")
+@router.patch(path="/promote", description="Эндпойнт для повышения ранга (если хватает монет).")
 async def update_rank(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для повышения ранга (если хватает монет).
