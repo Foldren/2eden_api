@@ -77,6 +77,7 @@ services:
       - 2eden_network
     volumes:
       - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./services/nginx/admin:/etc/nginx/admin
 
 
 networks:

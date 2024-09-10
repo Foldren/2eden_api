@@ -4,7 +4,7 @@ from aiogram.utils.web_app import WebAppInitData
 from fastapi import APIRouter, Depends
 from pytz import timezone
 from starlette import status
-from components.app.responses import CustomJSONResponse
+from components.responses import CustomJSONResponse
 from components.tools import send_referral_mining_reward, validate_telegram_hash
 from db_models.api import User
 

@@ -3,7 +3,7 @@ from aiogram.utils.web_app import WebAppInitData
 from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
 from starlette import status
-from components.app.responses import CustomJSONResponse
+from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash
 from db_models.api import Stats, User, Rank
 

@@ -1,7 +1,7 @@
 from starlette.requests import Request
 from starlette_admin import IntegerField, StringField, FloatField, DateTimeField, BooleanField, EnumField
-from components.admin.views import TortoiseModelView
 from components.enums import RewardTypeName, RankName
+from admin.tortoise_view import TortoiseModelView
 
 
 class RankView(TortoiseModelView):

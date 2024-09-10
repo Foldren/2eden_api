@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
 from pytz import timezone
 from starlette import status
-from components.app.requests import SyncClicksRequest
-from components.app.responses import CustomJSONResponse
+from components.requests import SyncClicksRequest
+from components.responses import CustomJSONResponse
 from components.tools import sync_energy, validate_telegram_hash, get_daily_reward
 from db_models.api import User, User_Pydantic
 

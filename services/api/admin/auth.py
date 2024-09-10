@@ -3,10 +3,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette_admin.auth import AdminConfig, AdminUser, AuthProvider
 from starlette_admin.exceptions import FormValidationError, LoginFailed
-try:
-    from config import ADMIN_SECRET_KEY, ADMIN_NAME, ADMIN_HASH_PASSWORD
-except ImportError:
-    from services.api.config import ADMIN_SECRET_KEY, ADMIN_NAME, ADMIN_HASH_PASSWORD
+from config import ADMIN_SECRET_KEY, ADMIN_NAME, ADMIN_HASH_PASSWORD
 
 
 class CustomAuthProvider(AuthProvider):

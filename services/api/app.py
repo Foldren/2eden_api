@@ -1,36 +1,33 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.responses import UJSONResponse
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.staticfiles import StaticFiles
 from starlette_admin import BaseAdmin, DropDown
 from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
-from admin import UserView, RankView, ActivityView, RewardsView, StatsView
-from components.admin.auth import CustomAuthProvider
+from admin.auth import CustomAuthProvider
+from db_models.api import User, Rank, Stats, Activity, Reward
+from routers import synchronization, mining, rewarding, leaderboard, tasks
+from admin.views import UserView, RankView, ActivityView, RewardsView, StatsView
 
 try:
-    from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
+    from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
 except ImportError:
-    from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS, HOST
-from db_models.api import User, Rank, Stats, Activity, Reward
+    from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
 
 try:
     from init import init
 except ImportError:
     from services.api.init import init
-from routers import synchronization, mining, rewarding, leaderboard, tasks
+
 
 # Используемые базы данных Redis
 # db9 - Для asgi_limit
 # db10 - Кеш fastapi_cache
 
 # Ставим самый быстрый декодер Ujson
-app = FastAPI(title="2Eden API - Swagger UI",
-              default_response_class=UJSONResponse,
-              root_path="/api")
+app = FastAPI(title="2Eden API - Swagger UI", default_response_class=UJSONResponse)
 
 
 # Подключаем Tortoise ORM
@@ -49,19 +46,20 @@ register_tortoise(app=app,
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["POST", "GET", "PUT", "DELETE", "PATCH"],
-    allow_headers=["X-Telegram-Init-Data"],
+    allow_headers=["*"],
 )
 
 # Инициализируем все
 app.add_event_handler("startup", init)
 
 # Подключаем роутеры
-app.include_router(synchronization.router)
-app.include_router(mining.router)
-app.include_router(rewarding.router)
-app.include_router(leaderboard.router)
-app.include_router(tasks.router)
+app.include_router(synchronization.router, prefix="/api")
+app.include_router(mining.router, prefix="/api")
+app.include_router(rewarding.router, prefix="/api")
+app.include_router(leaderboard.router, prefix="/api")
+app.include_router(tasks.router, prefix="/api")
 
 # Настраиваем админку
 admin = BaseAdmin(title="2Eden Admin",
@@ -78,4 +76,10 @@ admin.mount_to(app)
 
 if __name__ == "__main__":
     # workers = число потоков (1 процесс = 1 поток)
-    run("app:app", interface="asgi3", workers=max(PSQL_CPUS, 1), lifespan="on", host=HOST)
+    run(app="app:app",
+        interface="asgi3",
+        workers=max(PSQL_CPUS, 1),
+        lifespan="on",
+        host="0.0.0.0",
+        proxy_headers=True,
+        forwarded_allow_ips="*")

@@ -7,7 +7,7 @@ from pytz import timezone
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from components.enums import ConditionType
-from components.app.responses import CustomJSONResponse
+from components.responses import CustomJSONResponse
 from components.tools import check_task_visibility, validate_telegram_hash
 from db_models.api import User, Task, VisitLinkCondition, TgChannelCondition, UserTask
 
