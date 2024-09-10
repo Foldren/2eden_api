@@ -43,7 +43,7 @@ class ActivityView(TortoiseModelView):
     icon = "fa fa-calendar"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
+        IntegerField("id", label="Chat ID"),
         StringField("reg_date"),
         IntegerField("active_days"),
         BooleanField("is_active_mining"),
@@ -65,7 +65,7 @@ class StatsView(TortoiseModelView):
     icon = "fa fa-area-chart"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
+        IntegerField("id", label="Chat ID"),
         IntegerField("coins"),
         IntegerField("energy"),
         IntegerField("earned_week_coins"),
@@ -85,7 +85,8 @@ class RewardsView(TortoiseModelView):
     icon = "fa fa-gift"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
+        IntegerField("id", label="ID"),
+        IntegerField("user_id", label="Chat ID"),
         EnumField("type_name", enum=RewardTypeName),
         IntegerField("amount"),
         IntegerField("inspirations"),

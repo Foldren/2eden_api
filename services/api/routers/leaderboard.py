@@ -21,8 +21,7 @@ async def get_leaderboard(init_data: Annotated[WebAppInitData, Depends(validate_
     """
     users_stats = (await Stats.all()
                    .order_by('earned_week_coins')
-                   .limit(50)
-                   .select_related("user").values(id="user__id", coins="earned_week_coins"))
+                   .limit(50).values(id="id", coins="earned_week_coins"))
 
     users_stats.reverse()
 
