@@ -42,7 +42,7 @@ services:
       - db
       - cache
     ports:
-      - 127.0.0.1:18000:8000
+      - 18000:8000
     networks:
       - 2eden_network
     volumes:
