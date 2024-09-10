@@ -33,8 +33,8 @@ async def init_db():
 
     # Создаем юзера
     user = await User.create(id=chat_id, country="RU", rank_id=1)
-    await Stats.create(id=user.id)
-    await Activity.create(id=user.id)
+    await Stats.create(user_id=user.id)
+    await Activity.create(user_id=user.id)
     yield
 
 

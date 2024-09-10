@@ -48,7 +48,8 @@ class User(Model):
 
 
 class Activity(Model):
-    id = OneToOneField(pk=True, model_name="api.User", on_delete=OnDelete.CASCADE, related_name="activity")
+    id = BigIntField(pk=True)
+    user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="activity")
     reg_date = DateField(default=datetime.now())  # -
     last_login_date = DateField(default=datetime.now())
     last_daily_reward = DateField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=35)))
@@ -63,7 +64,8 @@ class Activity(Model):
 
 
 class Stats(Model):
-    id = OneToOneField(pk=True, model_name="api.User", on_delete=OnDelete.CASCADE, related_name="stats")
+    id = BigIntField(pk=True)
+    user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="stats")
     coins = BigIntField(default=1000)
     energy = FloatField(default=2000)
     earned_week_coins = BigIntField(default=0)

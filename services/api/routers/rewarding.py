@@ -43,7 +43,7 @@ async def get_reward(req: GetRewardRequest,
 
     try:
         reward = await Reward.filter(user_id=user_chat_id, id=req.reward_id).first()
-        user_stats = await Stats.filter(id=user_chat_id).first()
+        user_stats = await Stats.filter(user_id=user_chat_id).first()
 
         user_stats.coins += reward.amount
         user_stats.inspirations += reward.inspirations

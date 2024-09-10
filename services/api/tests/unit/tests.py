@@ -31,7 +31,7 @@ async def test_get_leaderboard(client: AsyncClient) -> None:
 async def test_update_rank(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_coins":
-            await Stats.filter(id=chat_id).update(coins=99999999999)
+            await Stats.filter(id=1).update(coins=99999999999)
         case "with_max_rank":
             await User.filter(id=chat_id).update(rank_id=20)
 
@@ -52,7 +52,7 @@ async def test_start_mining(client: AsyncClient, variant: str, status_code: int)
             response = await client.post(url="/mining/start")
         case _:
             tnm = datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=1)
-            await Activity.filter(id=chat_id).update(next_mining=tnm)
+            await Activity.filter(id=1).update(next_mining=tnm)
             response = await client.post(url="/mining/start")
 
     await assert_status_code(response, status_code)
@@ -64,7 +64,7 @@ async def test_end_mining(client: AsyncClient, variant: str, status_code: int) -
         case "without_constraints":
             await User.filter(id=chat_id).update(rank_id=4)
             tnm = datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=1)
-            await Activity.filter(id=chat_id).update(next_mining=tnm)
+            await Activity.filter(id=1).update(next_mining=tnm)
             response = await client.post(url="/mining/claim")
         case "with_small_rank":
             await User.filter(id=chat_id).update(rank_id=1)
@@ -75,7 +75,7 @@ async def test_end_mining(client: AsyncClient, variant: str, status_code: int) -
             response = await client.post(url="/mining/claim")
         case _:
             tnm = datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=1)
-            await Activity.filter(id=chat_id).update(next_mining=tnm, is_active_mining=False)
+            await Activity.filter(id=1).update(next_mining=tnm, is_active_mining=False)
             response = await client.post(url="/mining/claim")
 
     await assert_status_code(response, status_code)
@@ -128,7 +128,7 @@ async def test_sync_inspiration_clicks(client: AsyncClient, variant: str, status
         case "without_boosts":
             await User.filter(id=chat_id).update(rank_id=2)
         case "without_constraints":
-            await Stats.filter(id=chat_id).update(inspirations=2)
+            await Stats.filter(id=1).update(inspirations=2)
 
     response = await client.patch(url="/user/bonus/sync_inspiration_clicks", json={"clicks": 5000})
     await assert_status_code(response, status_code)
@@ -142,9 +142,9 @@ async def test_use_replenishment(client: AsyncClient, variant: str, status_code:
         case "without_boosts":
             await User.filter(id=chat_id).update(rank_id=3)
         case "with_max_energy":
-            await Stats.filter(id=chat_id).update(replenishments=2, energy=10000)
+            await Stats.filter(id=1).update(replenishments=2, energy=10000)
         case "without_constraints":
-            await Stats.filter(id=chat_id).update(energy=0)
+            await Stats.filter(id=1).update(energy=0)
 
     response = await client.post(url="/user/bonus/replenishment")
     await assert_status_code(response, status_code)

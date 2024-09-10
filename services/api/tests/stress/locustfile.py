@@ -80,8 +80,8 @@ async def create_user() -> None:
 
     # Создаем юзера для тестов в бд, будем работать с одним init_data
     await User.create(id=user_id, country="RU")
-    await Stats.create(id=user_id)
-    await Activity.create(id=user_id)
+    await Stats.create(user_id=user_id)
+    await Activity.create(user_id=user_id)
     await sleep(0.01)
 
 
