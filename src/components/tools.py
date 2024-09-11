@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from pytz import timezone
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from components import enums
-from components.enums import VisibilityType
 from config import TOKEN
 from db_models.api import User, Reward, Task, RankVisibility
 
@@ -143,11 +142,11 @@ async def sync_energy(user: User) -> None:
 
 
 async def check_task_visibility(task: Task, user: User):
-    if task.visibility.type == VisibilityType.RANK:
+    if task.visibility.type == enums.VisibilityType.RANK:
         rank_visibility = await RankVisibility.get(visibility=task.visibility)
         return user.rank.league >= rank_visibility.rank.league
 
-    elif task.visibility.type == VisibilityType.ALLWAYS:
+    elif task.visibility.type == enums.VisibilityType.ALLWAYS:
         return True
 
     return False

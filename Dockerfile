@@ -1,11 +1,11 @@
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
-WORKDIR /root
+WORKDIR /root/.project
 
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY src ./.project
+COPY src .
 
 CMD ["python", "main.py"]

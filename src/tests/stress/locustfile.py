@@ -1,15 +1,11 @@
-import hashlib
-import hmac
 import random
 from asyncio import run, sleep
-from operator import itemgetter
 from os import system
-from urllib.parse import parse_qsl
 from locust import task, HttpUser, events, constant
 from locust.env import Environment
 from tortoise import Tortoise
-from config import TOKEN, LOCUST_T_CONFIG
 from db_models.api import User, Activity, Stats
+from ...config import LOCUST_T_CONFIG
 
 # Количество пользователей
 number_users = 4600

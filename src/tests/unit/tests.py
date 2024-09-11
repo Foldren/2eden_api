@@ -3,10 +3,10 @@ import pytest
 from httpx import AsyncClient
 from pytz import timezone
 from starlette.status import HTTP_200_OK
-from components.tools import assert_status_code
-from db_models.api import User, Activity, Stats, Reward
-import services.api.tests.unit.params as params
-from services.api.tests.unit.conftest import chat_id
+from ...components.tools import assert_status_code
+from ...db_models.api import User, Activity, Stats, Reward
+import params as params
+from conftest import chat_id
 
 
 @pytest.mark.parametrize("init_data, status_code", params.login_params)
