@@ -10,16 +10,8 @@ from admin.auth import CustomAuthProvider
 from db_models.api import User, Rank, Stats, Activity, Reward
 from routers import synchronization, mining, rewarding, leaderboard, tasks
 from admin.views import UserView, RankView, ActivityView, RewardsView, StatsView
-
-try:
-    from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
-except ImportError:
-    from services.api.config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
-
-try:
-    from init import init
-except ImportError:
-    from services.api.init import init
+from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
+from init import init
 
 
 # Используемые базы данных Redis
@@ -76,7 +68,7 @@ admin.mount_to(app)
 
 if __name__ == "__main__":
     # workers = число потоков (1 процесс = 1 поток)
-    run(app="app:app",
+    run(app="main:app",
         interface="asgi3",
         workers=max(PSQL_CPUS, 1),
         lifespan="on",

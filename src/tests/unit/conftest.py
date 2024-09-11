@@ -3,9 +3,9 @@ from typing import AsyncIterator
 import pytest_asyncio
 from httpx import AsyncClient
 from tortoise import Tortoise
-from app import app
+from main import app
 from db_models.api import User, Stats, Activity
-from services.api.init import init
+from ...init import init
 
 # config_data
 pytest_plugins = ("pytest_asyncio",)

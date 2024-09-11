@@ -1,7 +1,5 @@
 fastapi==0.112.1
-python-jose==3.3.0
 python-dotenv==1.0.1
-fastapi-jwt[authlib]==0.3.0
 uvicorn==0.30.5
 pytz==2024.1
 starlette==0.38.2
@@ -12,7 +10,6 @@ starlette-admin==0.14.1
 redis==5.0.8
 httpx==0.27.0
 fastapi-cache2==0.2.2
-PyJWT==2.9.0
 itsdangerous==2.2.0
 PyYAML==6.0.2
 asyncpg==0.29.0
