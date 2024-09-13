@@ -21,6 +21,13 @@ class RewardTypeName(str, Enum):
     LEADERBOARD = "leaderboard"
     TASK = "task"
     REFERRAL = "referral"
+    AI_QUESTION = "ai_question"
+
+
+class QuestionStatus(str, Enum):
+    IN_PROGRESS = "in_progress"
+    HAVE_ANSWER = "have_answer"
+    RECEIVED_AWARD = "received_award"
 
 
 # Перечисление для типов условий выполнения задач

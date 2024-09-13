@@ -4,7 +4,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 from tortoise import Tortoise
 from ...main import app
-from ...db_models.api import User, Stats, Activity
+from models import User, Stats, Activity
 from ...init import init
 
 # config_data

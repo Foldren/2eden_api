@@ -6,7 +6,7 @@ from pytz import timezone
 from starlette import status
 from components.responses import CustomJSONResponse
 from components.tools import send_referral_mining_reward, validate_telegram_hash
-from db_models.api import User
+from models import User
 
 router = APIRouter(prefix="/mining", tags=["Mining"])
 

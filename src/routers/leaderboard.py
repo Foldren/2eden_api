@@ -5,7 +5,7 @@ from fastapi_cache.decorator import cache
 from starlette import status
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash
-from db_models.api import Stats, User, Rank
+from models import Stats, User, Rank
 
 router = APIRouter(prefix="/user", tags=["User"])
 

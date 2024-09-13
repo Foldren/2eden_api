@@ -4,7 +4,7 @@ from os import system
 from locust import task, HttpUser, events, constant
 from locust.env import Environment
 from tortoise import Tortoise
-from db_models.api import User, Activity, Stats
+from models import User, Activity, Stats
 from ...config import LOCUST_T_CONFIG
 
 # Количество пользователей

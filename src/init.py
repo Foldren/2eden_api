@@ -4,7 +4,7 @@ from redis.asyncio import from_url
 from components.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
 from config import REDIS_URL
-from db_models.api import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, \
+from models import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, \
     RankVisibility
 
 

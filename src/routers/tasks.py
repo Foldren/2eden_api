@@ -9,7 +9,7 @@ from tortoise.exceptions import DoesNotExist
 from components.enums import ConditionType
 from components.responses import CustomJSONResponse
 from components.tools import check_task_visibility, validate_telegram_hash
-from db_models.api import User, Task, VisitLinkCondition, TgChannelCondition, UserTask
+from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 

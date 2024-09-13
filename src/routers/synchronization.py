@@ -9,7 +9,7 @@ from starlette import status
 from components.requests import SyncClicksRequest
 from components.responses import CustomJSONResponse
 from components.tools import sync_energy, validate_telegram_hash, get_daily_reward
-from db_models.api import User, User_Pydantic
+from models import User, User_Pydantic
 
 router = APIRouter(prefix="/user", tags=["User"])
 

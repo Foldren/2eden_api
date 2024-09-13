@@ -7,14 +7,14 @@ from starlette_admin import BaseAdmin, DropDown
 from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin.auth import CustomAuthProvider
-from db_models.api import User, Rank, Stats, Activity, Reward
-from routers import synchronization, mining, rewarding, leaderboard, tasks
+from models import User, Rank, Stats, Activity, Reward
+from routers import synchronization, mining, rewarding, leaderboard, tasks, questions
 from admin.views import UserView, RankView, ActivityView, RewardsView, StatsView
 from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
 from init import init
 
-
 # Используемые базы данных Redis
+# db 0 - кеш для стейтов бота
 # db9 - Для asgi_limit
 # db10 - Кеш fastapi_cache
 
@@ -30,8 +30,7 @@ register_tortoise(app=app,
 
 # @app.exception_handler(HTTPException)
 # async def http_exception_handler(request: Request, exc: HTTPException):
-#     return CustomJSONResponse(message=exc.detail,
-#                               status_code=exc.status_code)
+#     return CustomJSONResponse(message=exc.detail, status_code=exc.status_code)
 
 
 # Добавляем cors middleware
@@ -52,6 +51,7 @@ app.include_router(mining.router, prefix="/api")
 app.include_router(rewarding.router, prefix="/api")
 app.include_router(leaderboard.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
+app.include_router(questions.router, prefix="/api")
 
 # Настраиваем админку
 admin = BaseAdmin(title="2Eden Admin",
@@ -67,10 +67,9 @@ admin.add_view(DropDown("Пользователи",
 admin.mount_to(app)
 
 if __name__ == "__main__":
-    # workers = число потоков (1 процесс = 1 поток)
     run(app="main:app",
         interface="asgi3",
-        workers=max(PSQL_CPUS, 1),
+        workers=max(PSQL_CPUS, 1),  # workers = число потоков (1 процесс = 1 поток)
         lifespan="on",
         host="0.0.0.0",
         proxy_headers=True,

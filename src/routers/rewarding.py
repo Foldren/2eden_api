@@ -6,7 +6,7 @@ from starlette import status
 from components.requests import GetRewardRequest
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash
-from db_models.api import Reward, Stats
+from models import Reward, Stats
 
 router = APIRouter(prefix="/reward", tags=["Reward"])
 

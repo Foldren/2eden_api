@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from pytz import timezone
 from starlette.status import HTTP_200_OK
 from ...components.tools import assert_status_code
-from ...db_models.api import User, Activity, Stats, Reward
+from models import User, Activity, Stats, Reward
 import params as params
 from conftest import chat_id
 

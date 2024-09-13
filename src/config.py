@@ -1,6 +1,7 @@
 from os import environ
 import yaml
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -36,7 +37,7 @@ TORTOISE_CONFIG = {
         }
     },
     "apps": {
-        "api": {"models": ["db_models.api"], "default_connection": "api"},
+        "api": {"models": ["models"], "default_connection": "api"},
     },
     'use_tz': True,
     'timezone': 'Europe/Moscow'
@@ -56,7 +57,7 @@ LOCUST_T_CONFIG = {
         }
     },
     "apps": {
-        "api": {"models": ["db_models.api"], "default_connection": "api"},
+        "api": {"models": ["models"], "default_connection": "api"},
     },
     'use_tz': True,
     'timezone': 'Europe/Moscow'
@@ -69,3 +70,5 @@ ADMIN_HASH_PASSWORD = environ['ADMIN_HASH_PASSWORD']
 ADMIN_SECRET_KEY = environ['ADMIN_SECRET_KEY']
 
 ADMIN_MW_SECRET_KEY = environ['ADMIN_MW_SECRET_KEY']
+
+MODEL = SentenceTransformer('all-MiniLM-L6-v2')

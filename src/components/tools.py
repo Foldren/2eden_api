@@ -3,12 +3,17 @@ from aiogram.utils.web_app import safe_parse_webapp_init_data, WebAppInitData
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 from httpx import Response
-from pydantic import BaseModel
 from pytz import timezone
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from components import enums
 from config import TOKEN
-from db_models.api import User, Reward, Task, RankVisibility
+from models import User, Reward, Task, RankVisibility
+from typing import Any
+from better_profanity import profanity
+from redisvl.index import AsyncSearchIndex
+from redisvl.query import VectorQuery
+from spellchecker import SpellChecker
+from config import MODEL
 
 
 async def get_daily_reward(user: User) -> None:
@@ -163,14 +168,6 @@ async def assert_status_code(response: Response, status_code: int) -> None:
     print(frmt_text)  # Это нужный вывод
 
 
-class TelegramUser(BaseModel):
-    id: int
-    first_name: str
-    last_name: str
-    username: str
-    language_code: str
-
-
 async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHeader(name="X-Telegram-Init-Data"))) -> WebAppInitData:
     """
     Fastapi Depend для валидации telegram hash юзера, возвращает init_data, если все окей.
@@ -189,3 +186,18 @@ async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHead
 
     except ValueError:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Данные юзера Telegram не валидны.")
+
+
+async def ai_msg_base_check(question: str) -> None:
+    """
+    Функция для базовых проверок вопроса на английском (длина, корректность ввода, мат).
+    :param question: вопрос, заданный юзером через бот
+    """
+    profanity.load_censor_words()  # подгружаем список нецензурных слов
+    spell = SpellChecker(language='en')  # спелл объект для проверки орфографии
+    corrects_words = [spell.correction(word) for word in question.split()]  # список автооткорректированных слов
+
+    assert None not in corrects_words, "❓ Я не могу прочесть твое заклинание, послушник мой."
+    assert len(question) >= 10, "🌀 Слишком короткое сообщение, аколит."
+    assert len(question.split()) >= 2, "👁‍🗨 Слишком мало слов в сообщении, аколит."
+    assert "*" not in profanity.censor(question), "💢 Послушник мой, нельзя использовать мат в заклинаниях!"
