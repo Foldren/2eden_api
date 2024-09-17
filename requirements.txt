@@ -3,7 +3,7 @@ python-dotenv==1.0.1
 uvicorn==0.30.5
 pytz==2024.1
 starlette==0.38.2
-tortoise-orm==0.21.5
+tortoise-orm==0.20.1
 ujson==5.10.0
 cryptography==42.0.8
 starlette-admin==0.14.1
