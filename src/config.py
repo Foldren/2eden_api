@@ -1,7 +1,6 @@
 from os import environ
 import yaml
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -70,5 +69,3 @@ ADMIN_HASH_PASSWORD = environ['ADMIN_HASH_PASSWORD']
 ADMIN_SECRET_KEY = environ['ADMIN_SECRET_KEY']
 
 ADMIN_MW_SECRET_KEY = environ['ADMIN_MW_SECRET_KEY']
-
-MODEL = SentenceTransformer('all-MiniLM-L6-v2')

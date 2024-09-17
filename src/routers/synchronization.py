@@ -63,7 +63,7 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
     max_extraction = int(user.rank.max_energy * 1.2)  # максимум можно заработать max_energy + 20%
 
     if user.rank.id < 2:
-        return CustomJSONResponse(message="Маловат ранг.",
+        return CustomJSONResponse(message="Маловат ранг.", #todo ошибка
                                   status_code=status.HTTP_409_CONFLICT)
 
     if user.stats.inspirations == 0:

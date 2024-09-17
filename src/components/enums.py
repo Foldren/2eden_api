@@ -27,7 +27,7 @@ class RewardTypeName(str, Enum):
 class QuestionStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     HAVE_ANSWER = "have_answer"
-    RECEIVED_AWARD = "received_award"
+    RECEIVED_REWARD = "received_reward"
 
 
 # Перечисление для типов условий выполнения задач

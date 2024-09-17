@@ -5,21 +5,19 @@ from deep_translator import GoogleTranslator
 from fastapi import APIRouter, Depends
 from pytz import timezone
 from starlette import status
-from tortoise.expressions import F
-from tortoise.functions import Sum
 from components.enums import QuestionStatus, RewardTypeName
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash, ai_msg_base_check
-from models import Question, Stats, Reward
+from models import Question, Reward
 
 router = APIRouter(prefix="/questions", tags=["Questions"])
 
 
-@router.post("/ask")
+@router.post(path="/ask", description="Эндпойнт для создания нового вопроса для AI.")
 async def ask_question(question: str,
                        init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
-    Создание нового вопроса для AI.
+    Эндпойнт для создания нового вопроса для AI.
     @param question: текст вопроса
     @param init_data: данные юзера telegram
     @return:
@@ -54,37 +52,38 @@ async def ask_question(question: str,
         return CustomJSONResponse(message=str(e), status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
     # Если вс окэй
-    await Question.create(user_id=user_id)
+    await Question.create(user_id=user_id, text=transl_question, u_text=question)
 
     return CustomJSONResponse(message="Я пошел думать над твоим вопросом.")
 
 
-@router.get("/status")
+@router.get(path="/status", description="Эндпойнт на проверку статуса вопроса к AI.")
 async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
-    Проверка статуса вопроса к AI.
+    Эндпойнт на проверку статуса вопроса к AI.
     @param init_data: данные юзера telegram
     @return:
     """
     user_id = init_data.user.id  # узнаем id юзера из Telegram-IniData
     last_question = await Question.filter(user_id=user_id).order_by("-id").first()
+    resp_data = {"status": last_question.status}
 
     if last_question.status == QuestionStatus.HAVE_ANSWER:
-    #todo
+        qst_reward = await Reward.filter(user_id=user_id, type=RewardTypeName.AI_QUESTION).order_by("-id").first()
+        resp_data["reward_id"] = qst_reward.id
 
-    return CustomJSONResponse(message="Выведен статус последнего вопроса.",
-                              data={"status": last_question.status, "reward_id": reward_id})
+    return CustomJSONResponse(message="Выведен статус последнего вопроса.", data=resp_data)
 
 
-@router.get("/history")
+@router.get(path="/history", description="Эндпойнт для получения истории диалога с AI.")
 async def get_history(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
-    Метод для получения диалога с AI.
+    Эндпойнт для получения истории диалога с AI.
     @param init_data: данные юзера telegram
     @return:
     """
     user_id = init_data.user.id  # узнаем id юзера из Telegram-IniData
-    questions = await Question.filter(user_id=user_id).values("id", "date_sent", "text", "answer")
+    questions = await Question.filter(user_id=user_id).values("id", "date_sent", "u_text", "answer")
 
     if not questions:
         return CustomJSONResponse(message="Пока не задано ниодного вопроса.",

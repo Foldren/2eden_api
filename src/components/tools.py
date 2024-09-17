@@ -8,12 +8,8 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from components import enums
 from config import TOKEN
 from models import User, Reward, Task, RankVisibility
-from typing import Any
 from better_profanity import profanity
-from redisvl.index import AsyncSearchIndex
-from redisvl.query import VectorQuery
 from spellchecker import SpellChecker
-from config import MODEL
 
 
 async def get_daily_reward(user: User) -> None:
