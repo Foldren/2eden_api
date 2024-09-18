@@ -2,10 +2,9 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 from pytz import timezone
 from tortoise import Model, Tortoise
-from tortoise.contrib.postgres.fields import TSVectorField
-from tortoise.contrib.pydantic import pydantic_model_creator
+from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
-    OnDelete, ForeignKeyField, OneToOneField, OneToOneRelation, ReverseRelation, FloatField, BooleanField
+    OnDelete, ForeignKeyField, OneToOneField, OneToOneRelation, ReverseRelation, FloatField, BooleanField, TextField
 from components.enums import RankName, RewardTypeName, VisibilityType, ConditionType, QuestionStatus
 
 
@@ -43,10 +42,10 @@ class User(Model):
 class Activity(Model):
     id = BigIntField(pk=True)
     user = OneToOneField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="activity")
-    reg_date = DateField(default=datetime.now())  # -
-    last_login_date = DateField(default=datetime.now())
+    reg_date = DateField(default=datetime.now(tz=timezone("Europe/Moscow")))  # -
+    last_login_date = DateField(default=datetime.now(tz=timezone("Europe/Moscow")))
     last_daily_reward = DateField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=35)))
-    last_sync_energy = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow"))))
+    last_sync_energy = DatetimeField(default=datetime.now(tz=timezone("Europe/Moscow")))
     next_inspiration = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
     next_mining = DatetimeField(default=(datetime.now(tz=timezone("Europe/Moscow")) - timedelta(days=1)))
     is_active_mining = BooleanField(default=False)
@@ -82,16 +81,13 @@ class Leader(Model):
 class Question(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField('api.User', on_delete=OnDelete.CASCADE, related_name='questions')
-    date_sent = DateField(auto_now_add=True)
+    datetime_sent = DatetimeField(default=datetime.now(tz=timezone("Europe/Moscow")))
     u_text = CharField(max_length=1000)  # На пользовательском языке
     text = CharField(max_length=1000)   # Всегда на английском
-    answer = CharField(max_length=1000)  # Всегда на русском
-    embedding = TSVectorField()
+    answer = CharField(max_length=1000, null=True)  # Всегда на русском
+    embedding = TextField(null=True)
     secret = BooleanField(default=0)
     status = CharEnumField(enum_type=QuestionStatus, default=QuestionStatus.IN_PROGRESS, description='Статус')
-
-    class PydanticMeta:
-        exclude = ("embedding",)
 
 
 # ------ Условия выполнения задач ------
@@ -164,3 +160,4 @@ class UserTask(Model):
 
 Tortoise.init_models(["models"], "api")
 User_Pydantic = pydantic_model_creator(User, name="User")
+Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions", exclude=("embedding", "text", "secret", "user"))

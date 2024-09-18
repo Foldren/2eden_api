@@ -47,7 +47,6 @@ async def get_reward(req: GetRewardRequest,
 
         if reward.type_name == RewardTypeName.AI_QUESTION:
             await Question.filter(user_id=user_chat_id).update(status=QuestionStatus.RECEIVED_REWARD)
-            #todo Проверка на время прошел ли день
 
         user_stats = await Stats.filter(user_id=user_chat_id).first()
 
