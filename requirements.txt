@@ -3,7 +3,7 @@ python-dotenv==1.0.1
 uvicorn==0.30.5
 pytz==2024.1
 starlette==0.38.2
-tortoise-orm==0.20.1
+tortoise-orm==0.21.6
 ujson==5.10.0
 cryptography==42.0.8
 starlette-admin==0.14.1
@@ -15,5 +15,5 @@ PyYAML==6.0.2
 asyncpg==0.29.0
 aiogram==3.12.0
 deep-translator==1.11.4
-tortoise-vector==0.1.1
 better-profanity==0.7.0
+pyspellchecker==0.8.1

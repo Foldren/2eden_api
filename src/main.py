@@ -55,6 +55,7 @@ app.include_router(questions.router, prefix="/api")
 
 # Настраиваем админку
 admin = BaseAdmin(title="2Eden Admin",
+                  base_url="/admin-hash-gsWMAjG6zRT7h001rs7jNZfserSv69",
                   auth_provider=CustomAuthProvider(),
                   middlewares=[Middleware(SessionMiddleware, secret_key=ADMIN_MW_SECRET_KEY)])
 

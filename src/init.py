@@ -1,6 +1,8 @@
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis.asyncio import from_url
+from tortoise import Tortoise
+
 from components.coders import UJsonCoder
 from components.enums import VisibilityType, ConditionType
 from config import REDIS_URL
@@ -25,6 +27,8 @@ async def create_necessary_db_objects() -> None:
     #
     # if not admin:  # todo Убрать -> c_aM8x3jGrJdBMOMHTc-xBp6hp0b-g
     #     await Admin.create(username=ADMIN_NAME, password=ADMIN_HASH_PASSWORD, is_superuser=True)
+
+    await Tortoise.generate_schemas()
 
     # Создание рангов --------------------------------------------------------------------------------------------------
     ranks = await Rank.all()

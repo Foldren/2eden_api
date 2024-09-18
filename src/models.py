@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 from pytz import timezone
 from tortoise import Model, Tortoise
+from tortoise.contrib.postgres.fields import TSVectorField
 from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, OneToOneRelation, ReverseRelation, FloatField, BooleanField
-from tortoise_vector.field import VectorField
 from components.enums import RankName, RewardTypeName, VisibilityType, ConditionType, QuestionStatus
 
 
@@ -81,14 +81,17 @@ class Leader(Model):
 
 class Question(Model):
     id = BigIntField(pk=True)
-    creator = ForeignKeyField('api.User', on_delete=OnDelete.CASCADE, related_name='questions')
+    user = ForeignKeyField('api.User', on_delete=OnDelete.CASCADE, related_name='questions')
     date_sent = DateField(auto_now_add=True)
     u_text = CharField(max_length=1000)  # На пользовательском языке
     text = CharField(max_length=1000)   # Всегда на английском
     answer = CharField(max_length=1000)  # Всегда на русском
-    embedding = VectorField(vector_size=384)
+    embedding = TSVectorField()
     secret = BooleanField(default=0)
     status = CharEnumField(enum_type=QuestionStatus, default=QuestionStatus.IN_PROGRESS, description='Статус')
+
+    class PydanticMeta:
+        exclude = ("embedding",)
 
 
 # ------ Условия выполнения задач ------
