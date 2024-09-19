@@ -21,7 +21,7 @@ async def get_reward_list(init_data: Annotated[WebAppInitData, Depends(validate_
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
     rewards_values = await (Reward.filter(user_id=user_chat_id)
-                            .values("id", "type_name", "amount", "inspirations", "replenishments"))
+                            .values("id", "type", "amount", "inspirations", "replenishments"))
 
     if not rewards_values:
         return CustomJSONResponse(message="Вознаграждений 0.",

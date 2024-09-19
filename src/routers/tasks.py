@@ -8,7 +8,7 @@ from starlette import status
 from tortoise.exceptions import DoesNotExist
 from components.responses import CustomJSONResponse
 from components.tools import check_task_visibility, validate_telegram_hash
-from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask, ConditionType
+from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask, ConditionType, Tasks_Pydantic_List
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -26,10 +26,11 @@ async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegr
 
     # фильтрация по условию доступности
     all_tasks = await Task.all()
-    filtered_tasks = [task for task in all_tasks if check_task_visibility(task, user)]
+    filtered_tasks_id = [task.id for task in all_tasks if check_task_visibility(task, user)]
+    pydantic_tasks = await Tasks_Pydantic_List.from_queryset(Task.filter(id__in=filtered_tasks_id))
     # по выполненным задачам не фильтруем
     # todo: выводить более полезную информацию о задачах, а не просто айдишники
-    return CustomJSONResponse(data={"tasks": filtered_tasks})
+    return CustomJSONResponse(data={"tasks": pydantic_tasks.model_dump(mode="json")})
 
 
 @router.post(path="/start/{task_id}", description="Метод для начала Таска. Создает для пользователя задачу для выполнения.")

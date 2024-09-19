@@ -204,3 +204,4 @@ Tortoise.init_models(["models"], "api")
 User_Pydantic = pydantic_model_creator(User, name="User")
 Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions",
                                                     exclude=("embedding", "text", "secret", "user"))
+Tasks_Pydantic_List = pydantic_queryset_creator(Task, name="Tasks")

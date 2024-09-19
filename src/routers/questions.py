@@ -24,7 +24,7 @@ async def ask_question(question: str,
     user_id = init_data.user.id  # узнаем id юзера из Telegram-IniData
     last_question = await Question.filter(user_id=user_id).order_by("-id").first()
 
-    if last_question:
+    if last_question is not None:
         # Проверка на статус
         if last_question.status == QuestionStatus.IN_PROGRESS:
             return CustomJSONResponse(
@@ -37,10 +37,10 @@ async def ask_question(question: str,
                 status_code=status.HTTP_409_CONFLICT)
 
         # Проверка на ограничение сообщения раз в день
-        # if last_question.time_sent.date() == datetime.now(tz=timezone("Europe/Moscow")).date():
-        #     return CustomJSONResponse(
-        #         message="Сегодня я не могу ответить на еще один твой вопрос, сын мой, приходи завтра.",
-        #         status_code=status.HTTP_208_ALREADY_REPORTED)
+        if last_question.time_sent.date() == datetime.now(tz=timezone("Europe/Moscow")).date():
+            return CustomJSONResponse(
+                message="Сегодня я не могу ответить на еще один твой вопрос, сын мой, приходи завтра.",
+                status_code=status.HTTP_208_ALREADY_REPORTED)
 
     # Переводим текст на английский
     transl_question = GoogleTranslator(source='auto', target='en').translate(question)
