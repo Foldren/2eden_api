@@ -6,10 +6,9 @@ from fastapi_cache.decorator import cache
 from pytz import timezone
 from starlette import status
 from tortoise.exceptions import DoesNotExist
-from components.enums import ConditionType
 from components.responses import CustomJSONResponse
 from components.tools import check_task_visibility, validate_telegram_hash
-from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask
+from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask, ConditionType
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 

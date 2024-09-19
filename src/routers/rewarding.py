@@ -3,11 +3,10 @@ from aiogram.utils.web_app import WebAppInitData
 from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
 from starlette import status
-from components.enums import RewardTypeName, QuestionStatus
 from components.requests import GetRewardRequest
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash
-from models import Reward, Stats, Question
+from models import Reward, Stats, Question, RewardType, QuestionStatus
 
 router = APIRouter(prefix="/reward", tags=["Reward"])
 
@@ -45,7 +44,7 @@ async def get_reward(req: GetRewardRequest,
     try:
         reward = await Reward.filter(user_id=user_chat_id, id=req.reward_id).first()
 
-        if reward.type_name == RewardTypeName.AI_QUESTION:
+        if reward.type == RewardType.AI_QUESTION:
             await Question.filter(user_id=user_chat_id).update(status=QuestionStatus.RECEIVED_REWARD)
 
         user_stats = await Stats.filter(user_id=user_chat_id).first()

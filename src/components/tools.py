@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 from httpx import Response
 from pytz import timezone
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
-from components import enums
+import models
 from config import TOKEN
 from models import User, Reward, Task, RankVisibility
 from better_profanity import profanity
@@ -31,26 +31,26 @@ async def get_daily_reward(user: User) -> None:
 
         match user.activity.active_days:
             case 1:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=500)
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=500)
             case 2:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000)
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000)
             case 3:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000,
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=1)
             case 4:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000,
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=1, replenishments=1)
             case 5:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=1000,
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=2, replenishments=1)
             case 6:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=5000,
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=5000,
                                     inspirations=2, replenishments=2)
             case 7:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=10000,
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=10000,
                                     inspirations=2, replenishments=2)
             case _:
-                await Reward.create(type_name=enums.RewardTypeName.LAUNCHES_SERIES, user_id=user.id, amount=10000,
+                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=10000,
                                     inspirations=2, replenishments=2)
 
     if timedelta(days=2) <= time_d_after_login:
@@ -77,13 +77,13 @@ async def get_referral_reward(lead: User, referral_code: str) -> None:
 
         match referrer.stats.invited_friends:
             case 1:
-                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=2000)
+                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=2000)
             case 5:
-                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=5000)
+                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=5000)
             case 100:
-                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=50000)
+                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=50000)
             case 1000:
-                await Reward.create(type_name=enums.RewardTypeName.INVITE_FRIENDS, user_id=referrer.id, amount=250000)
+                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=250000)
 
 
 async def send_referral_mining_reward(extraction: int, referrer_id: int = None) -> None:
@@ -97,14 +97,14 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
     if referrer_id is None:
         return
 
-    referrer_rw = await Reward.filter(user_id=referrer_id, type_name=enums.RewardTypeName.REFERRAL).first()
+    referrer_rw = await Reward.filter(user_id=referrer_id, type_name=models.RewardType.REFERRAL).first()
     income_5_perc = int(extraction * 0.05)
 
     if referrer_rw:
         referrer_rw.amount += income_5_perc
         await referrer_rw.save()
     else:
-        await Reward.create(user_id=referrer_id, type_name=enums.RewardTypeName.REFERRAL, amount=income_5_perc)
+        await Reward.create(user_id=referrer_id, type_name=models.RewardType.REFERRAL, amount=income_5_perc)
 
     referrer_upper_id = (await User.filter(id=referrer_id).values_list('referrer_id', flat=True))[0]
 
@@ -112,14 +112,14 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
     if referrer_upper_id is None:
         return
 
-    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type_name=enums.RewardTypeName.REFERRAL).first()
+    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type_name=models.RewardType.REFERRAL).first()
     income_1_perc = int(extraction * 0.01)
 
     if referrer_upper_rw:
         referrer_upper_rw.amount += income_1_perc
         await referrer_upper_rw.save()
     else:
-        await Reward.create(user_id=referrer_upper_id, type_name=enums.RewardTypeName.REFERRAL, amount=income_1_perc)
+        await Reward.create(user_id=referrer_upper_id, type_name=models.RewardType.REFERRAL, amount=income_1_perc)
 
 
 async def sync_energy(user: User) -> None:
@@ -143,11 +143,11 @@ async def sync_energy(user: User) -> None:
 
 
 async def check_task_visibility(task: Task, user: User):
-    if task.visibility.type == enums.VisibilityType.RANK:
+    if task.visibility.type == models.VisibilityType.RANK:
         rank_visibility = await RankVisibility.get(visibility=task.visibility)
         return user.rank.league >= rank_visibility.rank.league
 
-    elif task.visibility.type == enums.VisibilityType.ALLWAYS:
+    elif task.visibility.type == models.VisibilityType.ALLWAYS:
         return True
 
     return False
@@ -164,7 +164,8 @@ async def assert_status_code(response: Response, status_code: int) -> None:
     print(frmt_text)  # Это нужный вывод
 
 
-async def validate_telegram_hash(x_telegram_init_data: str = Security(APIKeyHeader(name="X-Telegram-Init-Data"))) -> WebAppInitData:
+async def validate_telegram_hash(
+        x_telegram_init_data: str = Security(APIKeyHeader(name="X-Telegram-Init-Data"))) -> WebAppInitData:
     """
     Fastapi Depend для валидации telegram hash юзера, возвращает init_data, если все окей.
     :param x_telegram_init_data: заголовок с window.Telegram.WebApp.initData
@@ -189,7 +190,7 @@ async def ai_msg_base_check(question: str) -> None:
     Функция для базовых проверок вопроса на английском (длина, корректность ввода, мат).
     :param question: вопрос, заданный юзером через бот
     """
-    profanity.load_censor_words()  # подгружаем список нецензурных слов
+    profanity.load_censor_words(whitelist_words=["god"])  # подгружаем список нецензурных слов
     spell = SpellChecker(language='en')  # спелл объект для проверки орфографии
     corrects_words = [spell.correction(word) for word in question.split()]  # список автооткорректированных слов
 

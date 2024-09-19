@@ -1,13 +1,54 @@
 from datetime import datetime, timedelta
+from enum import Enum
 from uuid import uuid4
 from pytz import timezone
 from tortoise import Model, Tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
     OnDelete, ForeignKeyField, OneToOneField, OneToOneRelation, ReverseRelation, FloatField, BooleanField, TextField
-from components.enums import RankName, RewardTypeName, VisibilityType, ConditionType, QuestionStatus
 
 
+# Enums ----------------------------------------------------------------------------------------------------------------
+class RankName(str, Enum):
+    ACOLYTE = "Acolyte"
+    DEACON = "Deacon"
+    PRIEST = "Priest"
+    ARCHDEACON = "Archdeacon"
+    BISHOP = "Bishop"
+    ARCHBISHOP = "Archbishop"
+    METROPOLITAN = "Metropolitan"
+    CARDINAL = "Cardinal"
+    PATRIARCH = "Patriarch"
+    MASTER = "Master"
+    POPE = "Pope"
+
+
+class RewardType(str, Enum):
+    LAUNCHES_SERIES = "launches_series"
+    INVITE_FRIENDS = "invite_friends"
+    LEADERBOARD = "leaderboard"
+    TASK = "task"
+    REFERRAL = "referral"
+    AI_QUESTION = "ai_question"
+
+
+class QuestionStatus(str, Enum):
+    IN_PROGRESS = "in_progress"
+    HAVE_ANSWER = "have_answer"
+    RECEIVED_REWARD = "received_reward"
+
+
+class ConditionType(str, Enum):
+    TG_CHANNEL = "tg_channel"
+    VISIT_LINK = "visit_link"
+
+
+class VisibilityType(str, Enum):
+    ALLWAYS = "allways"
+    RANK = "rank"
+
+
+# Models ---------------------------------------------------------------------------------------------------------------
 class Rank(Model):  # В системе изначально создаются все 10 рангов
     id = BigIntField(pk=True)
     users: ReverseRelation["User"]
@@ -66,7 +107,7 @@ class Stats(Model):
 class Reward(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
-    type_name = CharEnumField(enum_type=RewardTypeName, default=RewardTypeName.REFERRAL, description='Награда')
+    type = CharEnumField(enum_type=RewardType, default=RewardType.REFERRAL, description='Награда')
     amount = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
@@ -81,9 +122,9 @@ class Leader(Model):
 class Question(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField('api.User', on_delete=OnDelete.CASCADE, related_name='questions')
-    datetime_sent = DatetimeField(default=datetime.now(tz=timezone("Europe/Moscow")))
+    time_sent = DatetimeField(default=datetime.now(tz=timezone("Europe/Moscow")))
     u_text = CharField(max_length=1000)  # На пользовательском языке
-    text = CharField(max_length=1000)   # Всегда на английском
+    text = CharField(max_length=1000)  # Всегда на английском
     answer = CharField(max_length=1000, null=True)  # Всегда на русском
     embedding = TextField(null=True)
     secret = BooleanField(default=0)
@@ -158,6 +199,8 @@ class UserTask(Model):
         return self.completed_time is not None
 
 
+# Pydantic -------------------------------------------------------------------------------------------------------------
 Tortoise.init_models(["models"], "api")
 User_Pydantic = pydantic_model_creator(User, name="User")
-Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions", exclude=("embedding", "text", "secret", "user"))
+Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions",
+                                                    exclude=("embedding", "text", "secret", "user"))

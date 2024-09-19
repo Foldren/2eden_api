@@ -1,6 +1,6 @@
 from starlette.requests import Request
 from starlette_admin import IntegerField, StringField, FloatField, DateTimeField, BooleanField, EnumField
-from components.enums import RewardTypeName, RankName
+from models import RankName, RewardType
 from admin.tortoise_view import TortoiseModelView
 
 
@@ -86,7 +86,7 @@ class RewardsView(TortoiseModelView):
     pk_attr = "id"
     fields = (
         IntegerField("user_id", label="Chat ID"),
-        EnumField("type_name", enum=RewardTypeName),
+        EnumField("type_name", enum=RewardType),
         IntegerField("amount"),
         IntegerField("inspirations"),
         IntegerField("replenishments")

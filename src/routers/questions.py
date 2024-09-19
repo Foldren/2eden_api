@@ -5,10 +5,9 @@ from deep_translator import GoogleTranslator
 from fastapi import APIRouter, Depends
 from pytz import timezone
 from starlette import status
-from components.enums import QuestionStatus, RewardTypeName
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash, ai_msg_base_check
-from models import Question, Reward, Questions_Pydantic_List
+from models import Question, Reward, Questions_Pydantic_List, RewardType, QuestionStatus
 
 router = APIRouter(prefix="/questions", tags=["Questions"])
 
@@ -38,10 +37,10 @@ async def ask_question(question: str,
                 status_code=status.HTTP_409_CONFLICT)
 
         # Проверка на ограничение сообщения раз в день
-        if last_question.time_sent.date() == datetime.now(tz=timezone("Europe/Moscow")).date():
-            return CustomJSONResponse(
-                message="Сегодня я не могу ответить на еще один твой вопрос, сын мой, приходи завтра.",
-                status_code=status.HTTP_208_ALREADY_REPORTED)
+        # if last_question.time_sent.date() == datetime.now(tz=timezone("Europe/Moscow")).date():
+        #     return CustomJSONResponse(
+        #         message="Сегодня я не могу ответить на еще один твой вопрос, сын мой, приходи завтра.",
+        #         status_code=status.HTTP_208_ALREADY_REPORTED)
 
     # Переводим текст на английский
     transl_question = GoogleTranslator(source='auto', target='en').translate(question)
@@ -73,7 +72,7 @@ async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_teleg
         return CustomJSONResponse(message="Пользователь не задал ни одного вопроса.")
 
     if last_question.status == QuestionStatus.HAVE_ANSWER:
-        qst_reward = await Reward.filter(user_id=user_id, type=RewardTypeName.AI_QUESTION).order_by("-id").first()
+        qst_reward = await Reward.filter(user_id=user_id, type=RewardType.AI_QUESTION).order_by("-id").first()
         resp_data["reward_id"] = qst_reward.id
 
     return CustomJSONResponse(message="Выведен статус последнего вопроса.", data=resp_data)
