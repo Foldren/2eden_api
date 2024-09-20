@@ -7,9 +7,9 @@ from starlette_admin import BaseAdmin, DropDown
 from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin.auth import CustomAuthProvider
-from models import User, Rank, Stats, Activity, Reward
+from models import User, Rank, Stats, Activity, Reward, Question
 from routers import synchronization, mining, rewarding, leaderboard, tasks, questions
-from admin.views import UserView, RankView, ActivityView, RewardsView, StatsView
+from admin.views import UserView, RankView, ActivityView, RewardsView, StatsView, QuestionsView
 from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
 from init import init
 
@@ -63,7 +63,7 @@ admin.add_view(RankView(Rank))
 admin.add_view(DropDown("Пользователи",
                         icon="fa fa-user",
                         views=[UserView(User), ActivityView(Activity),
-                               StatsView(Stats), RewardsView(Reward)]))
+                               StatsView(Stats), RewardsView(Reward), QuestionsView(Question)]))
 
 admin.mount_to(app)
 
