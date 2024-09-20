@@ -29,6 +29,7 @@ class UserView(TortoiseModelView):
     pk_attr = "id"
     fields = (
         IntegerField("id", label="Chat ID"),
+        IntegerField("rank_id", label="RANK"),
         StringField("country"),
         StringField("referral_code")
     )
