@@ -1,6 +1,6 @@
 from starlette.requests import Request
 from starlette_admin import IntegerField, StringField, FloatField, DateTimeField, BooleanField, EnumField
-from models import RankName, RewardType
+from models import RankName, RewardType, QuestionStatus
 from admin.tortoise_view import TortoiseModelView
 
 
@@ -86,11 +86,25 @@ class RewardsView(TortoiseModelView):
     pk_attr = "id"
     fields = (
         IntegerField("user_id", label="Chat ID"),
-        EnumField("type_name", enum=RewardType),
+        EnumField("type", enum=RewardType),
         IntegerField("amount"),
         IntegerField("inspirations"),
         IntegerField("replenishments")
     )
 
+
+class QuestionsView(TortoiseModelView):
+    identity = "user-questions"
+    name = "Questions"
+    label = "Вопросы"
+    icon = "fa fa-commenting"
+    pk_attr = "id"
+    fields = (
+        IntegerField("user_id", label="Chat ID"),
+        DateTimeField("time_sent"),
+        StringField("u_text", label="Text"),
+        StringField("answer"),
+        EnumField("status", enum=QuestionStatus),
+    )
+
     def can_create(self, request: Request) -> bool: return False
-    def can_delete(self, request: Request) -> bool: return False
