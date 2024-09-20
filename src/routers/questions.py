@@ -3,6 +3,7 @@ from typing import Annotated
 from aiogram.utils.web_app import WebAppInitData
 from deep_translator import GoogleTranslator
 from fastapi import APIRouter, Depends
+from fastapi_cache.decorator import cache
 from pytz import timezone
 from starlette import status
 from components.responses import CustomJSONResponse
@@ -58,6 +59,7 @@ async def ask_question(question: str,
 
 
 @router.get(path="/status", description="Эндпойнт на проверку статуса вопроса к AI.")
+@cache(expire=30)
 async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на проверку статуса вопроса к AI.
@@ -79,6 +81,7 @@ async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_teleg
 
 
 @router.get(path="/history", description="Эндпойнт для получения истории диалога с AI.")
+@cache(expire=30)
 async def get_history(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для получения истории диалога с AI.

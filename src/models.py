@@ -79,6 +79,9 @@ class User(Model):
     def __str__(self):
         return self.id
 
+    class PydanticMeta:
+        exclude = ("rewards", "questions", "leader_place")
+
 
 class Activity(Model):
     id = BigIntField(pk=True)
@@ -129,6 +132,9 @@ class Question(Model):
     embedding = TextField(null=True)
     secret = BooleanField(default=0)
     status = CharEnumField(enum_type=QuestionStatus, default=QuestionStatus.IN_PROGRESS, description='Статус')
+
+    class PydanticMeta:
+        exclude = ("embedding", "text", "secret", "user")
 
 
 # ------ Условия выполнения задач ------
@@ -202,6 +208,5 @@ class UserTask(Model):
 # Pydantic -------------------------------------------------------------------------------------------------------------
 Tortoise.init_models(["models"], "api")
 User_Pydantic = pydantic_model_creator(User, name="User")
-Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions",
-                                                    exclude=("embedding", "text", "secret", "user"))
+Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions")
 Tasks_Pydantic_List = pydantic_queryset_creator(Task, name="Tasks")
