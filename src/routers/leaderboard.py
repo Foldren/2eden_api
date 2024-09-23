@@ -11,7 +11,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 
 
 @router.get(path="/leaderboard", description="Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю) earned_week_coins обнуляется и начисляет награды в воскресенье в таск менеджере (отдельный сервис).")
-@cache(expire=30)
+@cache(expire=3600)
 async def get_leaderboard(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю)

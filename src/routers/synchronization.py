@@ -120,7 +120,7 @@ async def use_replenishment(init_data: Annotated[WebAppInitData, Depends(validat
 
 
 @router.get(path="/profile", description="Эндпойнт на получение данных игрока.")
-@cache(expire=30)
+@cache(expire=10)
 async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение данных игрока.

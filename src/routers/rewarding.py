@@ -12,7 +12,7 @@ router = APIRouter(prefix="/reward", tags=["Reward"])
 
 
 @router.get(path="/list", description="Эндпойнт на получение списка наград юзера (приглашение, серия авторизаций, таск, лидерборд, реферал)")
-@cache(expire=30)
+@cache(expire=10)
 async def get_reward_list(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение списка наград юзера (приглашение, серия авторизаций, таск, лидерборд, реферал)

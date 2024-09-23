@@ -14,7 +14,7 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
 @router.get(path="/available", description="Метод для получения списка доступных задач.")
-@cache(expire=30)
+@cache(expire=10)
 async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Метод для получения списка доступных задач.

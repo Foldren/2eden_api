@@ -38,10 +38,10 @@ async def ask_question(question: str,
                 status_code=status.HTTP_409_CONFLICT)
 
         # Проверка на ограничение сообщения раз в день
-        if last_question.time_sent.date() == datetime.now(tz=timezone("Europe/Moscow")).date():
-            return CustomJSONResponse(
-                message="Сегодня я не могу ответить на еще один твой вопрос, сын мой, приходи завтра.",
-                status_code=status.HTTP_208_ALREADY_REPORTED)
+        # if last_question.time_sent.date() == datetime.now(tz=timezone("Europe/Moscow")).date():
+        #     return CustomJSONResponse(
+        #         message="Сегодня я не могу ответить на еще один твой вопрос, сын мой, приходи завтра.",
+        #         status_code=status.HTTP_208_ALREADY_REPORTED)
 
     # Переводим текст на английский
     transl_question = GoogleTranslator(source='auto', target='en').translate(question)
@@ -81,7 +81,7 @@ async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_teleg
 
 
 @router.get(path="/history", description="Эндпойнт для получения истории диалога с AI.")
-@cache(expire=30)
+@cache(expire=10)
 async def get_history(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для получения истории диалога с AI.
