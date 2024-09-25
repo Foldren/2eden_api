@@ -7,3 +7,7 @@ class GetRewardRequest(BaseModel):
 
 class SyncClicksRequest(BaseModel):
     clicks: int  # количество кликов
+
+
+class ChangeRegionRequest(BaseModel):
+    country: str  # страна

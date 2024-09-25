@@ -2,14 +2,16 @@ from datetime import timedelta, datetime
 from math import floor
 from typing import Annotated
 from aiogram.utils.web_app import WebAppInitData
+from deep_translator import GoogleTranslator
 from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
 from pytz import timezone
 from starlette import status
-from components.requests import SyncClicksRequest
+from components.requests import SyncClicksRequest, ChangeRegionRequest
 from components.responses import CustomJSONResponse
 from components.tools import sync_energy, validate_telegram_hash, get_daily_reward
 from models import User, User_Pydantic
+import pycountry
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -19,9 +21,9 @@ async def sync_clicks(req: SyncClicksRequest, init_data: Annotated[WebAppInitDat
     """
     Эндпойнт синхронизации кликов. Сколько бы кликов не отправили, все обрезается энергией, на счету у
     пользователя и дневными ограничениями.
-    :param req: request объект с кол-вом кликов SyncClicksRequest
-    :param init_data: данные юзера telegram
-    :return:
+    @param req: request объект с кол-вом кликов SyncClicksRequest
+    @param init_data: данные юзера telegram
+    @return:
     """
 
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
@@ -54,9 +56,9 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
     """
     Эндпойнт синхронизации кликов под бустером - вдохновение. Сколько бы кликов не отправили,
     все обрезается по формуле user.rank.max_energy * 1.2.
-    :param req: request объект с кол-вом кликов SyncClicksRequest
-    :param init_data: данные юзера telegram
-    :return:
+    @param req: request объект с кол-вом кликов SyncClicksRequest
+    @param init_data: данные юзера telegram
+    @return:
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
     user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rank").first()
@@ -94,8 +96,8 @@ async def sync_inspiration_clicks(req: SyncClicksRequest,
 async def use_replenishment(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на использование бустера - прилива, полностью востанавливает энергию игрока.
-    :param init_data: данные юзера telegram
-    :return:
+    @param init_data: данные юзера telegram
+    @return:
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
     user = await User.filter(id=user_chat_id).select_related("activity", "stats", "rank").first()
@@ -124,8 +126,8 @@ async def use_replenishment(init_data: Annotated[WebAppInitData, Depends(validat
 async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение данных игрока.
-    :param init_data: данные юзера telegram
-    :return:
+    @param init_data: данные юзера telegram
+    @return:
     """
     user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
 
@@ -139,4 +141,28 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
 
     return CustomJSONResponse(data=user_dump, message="Выведены данные профиля.")
 
+
+@router.post(path="/change_region", description="Эндпойнт на изменение региона пользователя.")
+async def change_user_region(req: ChangeRegionRequest, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
+    """
+    Эндпойнт на изменение региона пользователя (вводить в любом формате).
+    @param init_data: данные юзера telegram
+    @return:
+    """
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).first()
+
+    if "(changed)" in user.country:
+        return CustomJSONResponse(message="Вы уже меняли страну.",
+                                  status_code=status.HTTP_409_CONFLICT)
+    else:
+        try:
+            transl_country = GoogleTranslator(source='auto', target='en').translate(req.country)
+            f_country = pycountry.countries.search_fuzzy(transl_country)[0]
+            user.country = f_country.alpha_2 + " (changed)"
+            await user.save()
+            return CustomJSONResponse(message="Страна изменена.")
+        except LookupError:
+            return CustomJSONResponse(message="Страна задана неверно.",
+                                      status_code=status.HTTP_409_CONFLICT)
 

@@ -28,7 +28,7 @@ class RewardType(str, Enum):
     INVITE_FRIENDS = "invite_friends"
     LEADERBOARD = "leaderboard"
     TASK = "task"
-    REFERRAL = "referral"
+    MINING_REFERRAL = "referral"
     AI_QUESTION = "ai_question"
 
 
@@ -110,7 +110,7 @@ class Stats(Model):
 class Reward(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
-    type = CharEnumField(enum_type=RewardType, default=RewardType.REFERRAL, description='Награда')
+    type = CharEnumField(enum_type=RewardType, default=RewardType.MINING_REFERRAL, description='Награда')
     amount = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)
@@ -134,7 +134,7 @@ class Question(Model):
     status = CharEnumField(enum_type=QuestionStatus, default=QuestionStatus.IN_PROGRESS, description='Статус')
 
     class PydanticMeta:
-        exclude = ("embedding", "text", "secret", "user")
+        exclude = ("embedding", "text", "user")
 
 
 # ------ Условия выполнения задач ------

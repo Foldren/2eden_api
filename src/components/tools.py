@@ -97,29 +97,30 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
     if referrer_id is None:
         return
 
-    referrer_rw = await Reward.filter(user_id=referrer_id, type_name=models.RewardType.REFERRAL).first()
+    referrer_rw = await Reward.filter(user_id=referrer_id, type_name=models.RewardType.MINING_REFERRAL).first()
     income_5_perc = int(extraction * 0.05)
 
-    if referrer_rw:
+    if referrer_rw is not None:
         referrer_rw.amount += income_5_perc
         await referrer_rw.save()
     else:
-        await Reward.create(user_id=referrer_id, type_name=models.RewardType.REFERRAL, amount=income_5_perc)
+        await Reward.create(user_id=referrer_id, type_name=models.RewardType.MINING_REFERRAL, amount=income_5_perc)
 
-    referrer_upper_id = (await User.filter(id=referrer_id).values_list('referrer_id', flat=True))[0]
+    referrer_upper = await User.filter(id=referrer_id).first()
+    referrer_upper_id = referrer_upper.referrer_id
 
     # Если у реферрера нет реферрера то не выполняем
     if referrer_upper_id is None:
         return
 
-    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type_name=models.RewardType.REFERRAL).first()
+    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type_name=models.RewardType.MINING_REFERRAL).first()
     income_1_perc = int(extraction * 0.01)
 
-    if referrer_upper_rw:
+    if referrer_upper_rw is not None:
         referrer_upper_rw.amount += income_1_perc
         await referrer_upper_rw.save()
     else:
-        await Reward.create(user_id=referrer_upper_id, type_name=models.RewardType.REFERRAL, amount=income_1_perc)
+        await Reward.create(user_id=referrer_upper_id, type_name=models.RewardType.MINING_REFERRAL, amount=income_1_perc)
 
 
 async def sync_energy(user: User) -> None:
