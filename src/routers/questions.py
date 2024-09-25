@@ -6,7 +6,7 @@ from fastapi_cache.decorator import cache
 from starlette import status
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash, ai_msg_base_check
-from models import Question, Reward, Questions_Pydantic_List, RewardType, QuestionStatus
+from models import Question, Reward, Questions_Pydantic_List, RewardType, QuestionStatus, Question_Pydantic
 
 router = APIRouter(prefix="/questions", tags=["Questions"])
 
@@ -66,7 +66,9 @@ async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_teleg
     """
     user_id = init_data.user.id  # узнаем id юзера из Telegram-IniData
     last_question = await Question.filter(user_id=user_id).order_by("-id").first()
-    resp_data = {"status": last_question.status}
+    from_orm = await Question_Pydantic.from_tortoise_orm(last_question)
+
+    resp_data = {"question": from_orm.model_dump(mode='json')}
 
     if not last_question:
         return CustomJSONResponse(message="Пользователь не задал ни одного вопроса.")
