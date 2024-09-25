@@ -11,7 +11,7 @@ from models import Question, Reward, Questions_Pydantic_List, RewardType, Questi
 router = APIRouter(prefix="/questions", tags=["Questions"])
 
 
-@router.post(path="/ask", description="Эндпойнт для создания нового вопроса для AI.")
+@router.post(path="/ask", description="Эндпойнт для создания нового вопроса для AI.")  #
 async def ask_question(question: str,
                        init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
