@@ -208,5 +208,6 @@ class UserTask(Model):
 # Pydantic -------------------------------------------------------------------------------------------------------------
 Tortoise.init_models(["models"], "api")
 User_Pydantic = pydantic_model_creator(User, name="User")
+Question_Pydantic = pydantic_model_creator(Question, name="Question")
 Questions_Pydantic_List = pydantic_queryset_creator(Question, name="Questions")
 Tasks_Pydantic_List = pydantic_queryset_creator(Task, name="Tasks")
