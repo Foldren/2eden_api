@@ -1,10 +1,8 @@
-from datetime import datetime
 from typing import Annotated
 from aiogram.utils.web_app import WebAppInitData
 from deep_translator import GoogleTranslator
 from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
-from pytz import timezone
 from starlette import status
 from components.responses import CustomJSONResponse
 from components.tools import validate_telegram_hash, ai_msg_base_check
