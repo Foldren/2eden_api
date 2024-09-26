@@ -1,38 +1,25 @@
 from datetime import datetime, timedelta
-from typing import Dict, Any
 import pytest
 from httpx import AsyncClient
 from pytz import timezone
 from starlette.status import HTTP_200_OK
-from components.tools import assert_status_code
-from db_models.api import User, Activity, Stats, Reward
-import params
+from ...components.tools import assert_status_code
+from models import User, Activity, Stats, Reward
+import params as params
+from conftest import chat_id
 
 
-@pytest.mark.parametrize("data, variant, status_code", params.register_params)
-async def test_register(client: AsyncClient, data: Dict[str, Any], variant: str, status_code: int) -> None:
-    match variant:
-        case "no_referral_code":
-            response = await client.post(url="/auth/registration", json=data)
-        case "referral_code":
-            referrer = await User.first()
-            data["referral_code"] = referrer.referral_code
-            response = await client.post(url="/auth/registration", json=data)
-        case _:
-            response = await client.post(url="/auth/registration", json=data)
+@pytest.mark.parametrize("init_data, status_code", params.login_params)
+async def test_init_data(client: AsyncClient, init_data: str, status_code: int) -> None:
+    client.headers["X-Telegram-Init-Data"] = init_data
+    response = await client.get(url="/user/profile")
 
-    await assert_status_code(response, status_code)
+    if init_data == "invalid":
+        frmt_text = f"[Message: {response.json()["detail"]}]"
+    else:
+        frmt_text = f"[Message: {response.json()["message"]["text"]}]"
 
-
-@pytest.mark.parametrize("data, variant, status_code", params.login_params)
-async def test_login(client: AsyncClient, data: Dict[str, Any], variant: str, status_code: int) -> None:
-    response = await client.post(url="/auth/login", json=data)
-    await assert_status_code(response, status_code)
-
-
-async def test_refresh(client: AsyncClient) -> None:
-    response = await client.patch(url="/auth/refresh")
-    await assert_status_code(response, HTTP_200_OK)
+    assert response.status_code == status_code, frmt_text
 
 
 async def test_get_leaderboard(client: AsyncClient) -> None:
@@ -46,7 +33,7 @@ async def test_update_rank(client: AsyncClient, variant: str, status_code: int) 
         case "with_coins":
             await Stats.filter(id=1).update(coins=99999999999)
         case "with_max_rank":
-            await User.filter(id=1).update(rank_id=20)
+            await User.filter(id=chat_id).update(rank_id=20)
 
     response = await client.patch(url="/user/promote")
     await assert_status_code(response, status_code)
@@ -56,10 +43,10 @@ async def test_update_rank(client: AsyncClient, variant: str, status_code: int) 
 async def test_start_mining(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_small_rank":
-            await User.filter(id=1).update(rank_id=1)
+            await User.filter(id=chat_id).update(rank_id=1)
             response = await client.post(url="/mining/start")
         case "without_constraints":
-            await User.filter(id=1).update(rank_id=4)
+            await User.filter(id=chat_id).update(rank_id=4)
             response = await client.post(url="/mining/start")
         case "with_active_mining":
             response = await client.post(url="/mining/start")
@@ -75,15 +62,15 @@ async def test_start_mining(client: AsyncClient, variant: str, status_code: int)
 async def test_end_mining(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "without_constraints":
-            await User.filter(id=1).update(rank_id=4)
+            await User.filter(id=chat_id).update(rank_id=4)
             tnm = datetime.now(tz=timezone("Europe/Moscow")) - timedelta(hours=1)
             await Activity.filter(id=1).update(next_mining=tnm)
             response = await client.post(url="/mining/claim")
         case "with_small_rank":
-            await User.filter(id=1).update(rank_id=1)
+            await User.filter(id=chat_id).update(rank_id=1)
             response = await client.post(url="/mining/claim")
         case "with_not_end_mining":
-            await User.filter(id=1).update(rank_id=4)
+            await User.filter(id=chat_id).update(rank_id=4)
             await client.post(url="/mining/start")
             response = await client.post(url="/mining/claim")
         case _:
@@ -100,7 +87,7 @@ async def test_get_reward_list(client: AsyncClient, variant: str, status_code: i
         case "with_rewards":
             response = await client.get(url="/reward/list")
         case _:
-            await Reward.filter(user_id=1).delete()
+            await Reward.filter(user_id=chat_id).delete()
             response = await client.get(url="/reward/list")
 
     await assert_status_code(response, status_code)
@@ -112,10 +99,11 @@ async def test_get_reward(client: AsyncClient, variant: str, status_code: int) -
         case "without_rewards":
             response = await client.post(url="/reward", json={"reward_id": 2})
         case "with_someone_else_reward":
-            reward = await Reward.create(user_id=2)
+            user = await User.create(country="RU")
+            reward = await Reward.create(user_id=user.id)
             response = await client.post(url="/reward", json={"reward_id": reward.id})
         case _:
-            reward = await Reward.create(user_id=1)
+            reward = await Reward.create(user_id=chat_id)
             response = await client.post(url="/reward", json={"reward_id": reward.id})
 
     await assert_status_code(response, status_code)
@@ -136,9 +124,9 @@ async def test_sync_clicks(client: AsyncClient, variant: str, status_code: int) 
 async def test_sync_inspiration_clicks(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_small_rank":
-            await User.filter(id=1).update(rank_id=1)
+            await User.filter(id=chat_id).update(rank_id=1)
         case "without_boosts":
-            await User.filter(id=1).update(rank_id=2)
+            await User.filter(id=chat_id).update(rank_id=2)
         case "without_constraints":
             await Stats.filter(id=1).update(inspirations=2)
 
@@ -150,9 +138,9 @@ async def test_sync_inspiration_clicks(client: AsyncClient, variant: str, status
 async def test_use_replenishment(client: AsyncClient, variant: str, status_code: int) -> None:
     match variant:
         case "with_small_rank":
-            await User.filter(id=1).update(rank_id=1)
+            await User.filter(id=chat_id).update(rank_id=1)
         case "without_boosts":
-            await User.filter(id=1).update(rank_id=3)
+            await User.filter(id=chat_id).update(rank_id=3)
         case "with_max_energy":
             await Stats.filter(id=1).update(replenishments=2, energy=10000)
         case "without_constraints":

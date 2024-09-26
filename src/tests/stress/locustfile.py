@@ -1,42 +1,30 @@
 import random
-from asyncio import run
+from asyncio import run, sleep
 from os import system
-from typing import List, Dict
-from cryptography.fernet import Fernet
-from locust import task, between, FastHttpUser, events, constant, constant_pacing, constant_throughput
+from locust import task, HttpUser, events, constant
 from locust.env import Environment
 from tortoise import Tortoise
-from config import TORTOISE_CONFIG, SECRET_KEY
-from db_models.api import User
+from models import User, Activity, Stats
+from ...config import LOCUST_T_CONFIG
 
-# Список данных, созданных пользователей (вначале запустить тесты на регистрацию)
-users_cr: List[Dict[str, int | str]] = []
+# Количество пользователей
+number_users = 4600
+init_data = (f"query_id=AAGdJCdOAgAAAJ0kJ04EMHZk&user=%7B%22id%22%3A5606155421%2C%22first_name%22%3A%22Anna"
+             f"%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22sobored19%22%2C%22language_code%22%3A%2"
+             f"2en%22%2C%22allows_write_to_pm%22%3Atrue%7D&auth_date=1725451498&hash=c2f6fe2f69777ed02138b1"
+             f"3a25896c226aaeb20d72d49b588cfe265a292fa232")
+user_id = 5606155421
 
 
-class Api2EdenUser(FastHttpUser):
+class Api2EdenUser(HttpUser):
     # Настройка на 10000 юзеров и ~ 500 RPS
     wait_time = constant(20)  # RPS ~ USERS / WAIT_TIME, WAIT_TIME = USERS / желаемый RPS
-
-    # @task(43)
-    # def registration(self):
-    #     data = {"chat_id": random.randint(1234, 900252525),
-    #             "token": str(random.randint(1234, 900252525)),
-    #             "country": str(random.randint(1234, 900252525))
-    #             }
-    #     self.client.post("/auth/registration", json=data)
 
     def on_start(self) -> None:
         """
         На старте авторизуем юзера
         """
-        user = users_cr[random.randint(1, len(users_cr)-1)]
-        d_token = Fernet(SECRET_KEY).decrypt(user["token"]).decode("utf-8")
-        data = {"chat_id": user["chat_id"], "token": d_token}
-        self.client.post("/auth/login", json=data)
-
-    @task(1)
-    def refresh(self) -> None:
-        self.client.patch("/auth/refresh")
+        self.client.headers["X-Telegram-Init-Data"] = init_data
 
     @task(23)
     def get_leaderboard(self) -> None:
@@ -82,16 +70,30 @@ class Api2EdenUser(FastHttpUser):
         self.client.get("/user/profile")
 
 
-async def get_users_creds() -> Dict[str, str | int]:
-    await Tortoise.init(config=TORTOISE_CONFIG)
-    users_qs = await User.all().limit(10000).values("chat_id", "token")
-    return users_qs
+async def create_user() -> None:
+    await Tortoise.init(config=LOCUST_T_CONFIG)
+    await Tortoise.generate_schemas()
+
+    # Создаем юзера для тестов в бд, будем работать с одним init_data
+    await User.create(id=user_id, country="RU")
+    await Stats.create(user_id=user_id)
+    await Activity.create(user_id=user_id)
+    await sleep(0.01)
+
+
+async def drop_database() -> None:
+    await Tortoise.init(config=LOCUST_T_CONFIG)
+    await Tortoise._drop_databases()
 
 
 @events.test_start.add_listener
-def get_users_cr_list(environment: Environment, **kwargs) -> None:
-    global users_cr
-    users_cr = run(get_users_creds())
+def on_startup(environment: Environment, **kwargs) -> None:
+    run(create_user())
+
+
+@events.test_stop.add_listener
+def on_shutdown(environment: Environment, **kwargs) -> None:
+    run(drop_database())
 
 
 if __name__ == '__main__':

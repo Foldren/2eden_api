@@ -1,21 +1,22 @@
-from fastapi import Security, APIRouter
+from typing import Annotated
+from aiogram.utils.web_app import WebAppInitData
+from fastapi import APIRouter, Depends
 from fastapi_cache.decorator import cache
-from fastapi_jwt import JwtAuthorizationCredentials as JwtAuth
 from starlette import status
-from components.app.responses import CustomJSONResponse
-from config import ACCESS_SECURITY
-from db_models.api import Stats, User, Rank
+from components.responses import CustomJSONResponse
+from components.tools import validate_telegram_hash
+from models import Stats, User, Rank
 
 router = APIRouter(prefix="/user", tags=["User"])
 
 
-@router.get("/leaderboard")
-@cache(expire=30)
-async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+@router.get(path="/leaderboard", description="Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю) earned_week_coins обнуляется и начисляет награды в воскресенье в таск менеджере (отдельный сервис).")
+@cache(expire=3600)  # Проверка на час
+async def get_leaderboard(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт на получение лидерборда (50 лидеров по количеству заработанных монет за неделю)
     earned_week_coins обнуляется и начисляет награды в воскресенье в таск менеджере (отдельный сервис).
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
     users_stats = (await Stats.all()
@@ -29,21 +30,21 @@ async def get_leaderboard(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> C
                               message="Выведен список лидеров на текущую неделю.")
 
 
-@router.patch("/promote")
-async def update_rank(credentials: JwtAuth = Security(ACCESS_SECURITY)) -> CustomJSONResponse:
+@router.patch(path="/promote", description="Эндпойнт для повышения ранга (если хватает монет).")
+async def update_rank(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
     Эндпойнт для повышения ранга (если хватает монет).
-    :param credentials: authorization headers
+    :param init_data: данные юзера telegram
     :return:
     """
-    user_id = credentials.subject.get("user")  # узнаем id юзера из токена
-    user = await User.filter(id=user_id).select_related("stats", "rank").first()
+    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
+    user = await User.filter(id=user_chat_id).select_related("stats").first()
 
-    if user.rank.id >= 20:
+    if user.rank_id >= 20:
         return CustomJSONResponse(message="У вас максимальный ранг.",
                                   status_code=status.HTTP_409_CONFLICT)
 
-    next_rank = await Rank.filter(id=(user.rank.id + 1)).first()
+    next_rank = await Rank.filter(id=(user.rank_id + 1)).first()
 
     if user.stats.coins < next_rank.price:
         return CustomJSONResponse(message="Не хватает монет для повышения.",

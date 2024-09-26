@@ -1,6 +1,7 @@
 from pytest import param
-from starlette.status import HTTP_409_CONFLICT, HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED, \
-    HTTP_400_BAD_REQUEST, HTTP_208_ALREADY_REPORTED, HTTP_201_CREATED
+from starlette.status import (HTTP_409_CONFLICT, HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED,
+                              HTTP_208_ALREADY_REPORTED, HTTP_201_CREATED, HTTP_401_UNAUTHORIZED)
+from conftest import init_data
 
 register_params = (
     param({"chat_id": 1, "token": "1", "country": "ru"}, "no_referral_code", HTTP_201_CREATED,
@@ -12,9 +13,8 @@ register_params = (
 )
 
 login_params = (
-    param({"chat_id": 3, "token": "1"}, "bad_login", HTTP_404_NOT_FOUND, id="with_bad_login"),
-    param({"chat_id": 1, "token": "2"}, "bad_token", HTTP_400_BAD_REQUEST, id="with_bad_token"),
-    param({"chat_id": 1, "token": "1"}, "auth", HTTP_202_ACCEPTED, id="without_constraints"),
+    param("invalid", HTTP_401_UNAUTHORIZED, id="invalid_init_data"),
+    param(init_data, HTTP_200_OK, id="valid_init_data"),
 )
 
 update_rank_params = (

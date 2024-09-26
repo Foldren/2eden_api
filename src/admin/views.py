@@ -1,7 +1,7 @@
 from starlette.requests import Request
 from starlette_admin import IntegerField, StringField, FloatField, DateTimeField, BooleanField, EnumField
-from components.admin.views import TortoiseModelView
-from components.enums import RewardTypeName, RankName
+from models import RankName, RewardType, QuestionStatus
+from admin.tortoise_view import TortoiseModelView
 
 
 class RankView(TortoiseModelView):
@@ -28,8 +28,8 @@ class UserView(TortoiseModelView):
     icon = "fa fa-user"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
-        StringField("chat_id"),
+        IntegerField("id", label="Chat ID"),
+        IntegerField("rank_id", label="RANK"),
         StringField("country"),
         StringField("referral_code")
     )
@@ -44,7 +44,7 @@ class ActivityView(TortoiseModelView):
     icon = "fa fa-calendar"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
+        IntegerField("user_id", label="Chat ID"),
         StringField("reg_date"),
         IntegerField("active_days"),
         BooleanField("is_active_mining"),
@@ -66,7 +66,7 @@ class StatsView(TortoiseModelView):
     icon = "fa fa-area-chart"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
+        IntegerField("user_id", label="Chat ID"),
         IntegerField("coins"),
         IntegerField("energy"),
         IntegerField("earned_week_coins"),
@@ -86,12 +86,26 @@ class RewardsView(TortoiseModelView):
     icon = "fa fa-gift"
     pk_attr = "id"
     fields = (
-        IntegerField("id", label="User ID"),
-        EnumField("type_name", enum=RewardTypeName),
+        IntegerField("user_id", label="Chat ID"),
+        EnumField("type", enum=RewardType),
         IntegerField("amount"),
         IntegerField("inspirations"),
         IntegerField("replenishments")
     )
 
+
+class QuestionsView(TortoiseModelView):
+    identity = "user-questions"
+    name = "Questions"
+    label = "Вопросы"
+    icon = "fa fa-commenting"
+    pk_attr = "id"
+    fields = (
+        IntegerField("user_id", label="Chat ID"),
+        DateTimeField("time_sent"),
+        StringField("u_text", label="Text"),
+        StringField("answer"),
+        EnumField("status", enum=QuestionStatus),
+    )
+
     def can_create(self, request: Request) -> bool: return False
-    def can_delete(self, request: Request) -> bool: return False
