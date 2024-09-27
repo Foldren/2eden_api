@@ -66,12 +66,12 @@ async def get_last_question(init_data: Annotated[WebAppInitData, Depends(validat
     """
     user_id = init_data.user.id  # узнаем id юзера из Telegram-IniData
     last_question = await Question.filter(user_id=user_id).order_by("-id").first()
-    from_orm = await Question_Pydantic.from_tortoise_orm(last_question)
 
-    resp_data = from_orm.model_dump(mode='json')
-
-    if not last_question:
+    if last_question is None:
         return CustomJSONResponse(message="Пользователь не задал ни одного вопроса.")
+
+    from_orm = await Question_Pydantic.from_tortoise_orm(last_question)
+    resp_data = from_orm.model_dump(mode='json')
 
     if last_question.status == QuestionStatus.HAVE_ANSWER:
         qst_reward = await Reward.filter(user_id=user_id, type=RewardType.AI_QUESTION).order_by("-id").first()
