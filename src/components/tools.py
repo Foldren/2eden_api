@@ -5,9 +5,8 @@ from fastapi.security import APIKeyHeader
 from httpx import Response
 from pytz import timezone
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
-import models
 from config import TOKEN
-from models import User, Reward, Task, RankVisibility
+from models import User, Reward, Task, RankVisibility, RewardType, VisibilityType
 from better_profanity import profanity
 from spellchecker import SpellChecker
 
@@ -15,15 +14,13 @@ from spellchecker import SpellChecker
 async def get_daily_reward(user: User) -> None:
     """
     Функция для получения награды за серию авторизаций в игре.
-    :param user: User авторизовавшегося юзера с "activity", "rank", "rewards"
+    :param user: User авторизовавшегося юзера с "activity"
     """
-    dt_after_get_rw = datetime.fromisoformat(user.activity.last_daily_reward.isoformat()).replace(
-        tzinfo=timezone("Europe/Moscow"))
-    dt_last_login = datetime.fromisoformat(user.activity.last_login_date.isoformat()).replace(
-        tzinfo=timezone("Europe/Moscow"))
+    dt_after_get_rw = datetime.fromisoformat(user.activity.last_daily_reward.isoformat()).replace(tzinfo=timezone("Europe/Moscow"))
+    dt_last_login = datetime.fromisoformat(user.activity.last_login_date.isoformat()).replace(tzinfo=timezone("Europe/Moscow"))
 
     time_d_after_get_reward = datetime.now(tz=timezone("Europe/Moscow")) - dt_after_get_rw
-    time_d_after_login = datetime.now(tz=timezone("Europe/Moscow")) - dt_last_login
+    time_d_after_last_login = datetime.now(tz=timezone("Europe/Moscow")) - dt_last_login
 
     if timedelta(days=2) > time_d_after_get_reward > timedelta(days=1):
         user.activity.active_days += 1
@@ -31,29 +28,29 @@ async def get_daily_reward(user: User) -> None:
 
         match user.activity.active_days:
             case 1:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=500)
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=500)
             case 2:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000)
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000)
             case 3:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=1)
             case 4:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=1, replenishments=1)
             case 5:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=1000,
                                     inspirations=2, replenishments=1)
             case 6:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=5000,
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=5000,
                                     inspirations=2, replenishments=2)
             case 7:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=10000,
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=10000,
                                     inspirations=2, replenishments=2)
             case _:
-                await Reward.create(type_name=models.RewardType.LAUNCHES_SERIES, user_id=user.id, amount=10000,
+                await Reward.create(type=RewardType.LAUNCHES_SERIES, user_id=user.id, amount=10000,
                                     inspirations=2, replenishments=2)
 
-    if timedelta(days=2) <= time_d_after_login:
+    elif timedelta(days=2) <= time_d_after_last_login:
         user.activity.active_days = 0
         user.activity.last_daily_reward = datetime.now(tz=timezone("Europe/Moscow"))
 
@@ -77,13 +74,13 @@ async def get_referral_reward(lead: User, referral_code: str) -> None:
 
         match referrer.stats.invited_friends:
             case 1:
-                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=2000)
+                await Reward.create(type=RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=2000)
             case 5:
-                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=5000)
+                await Reward.create(type=RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=5000)
             case 100:
-                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=50000)
+                await Reward.create(type=RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=50000)
             case 1000:
-                await Reward.create(type_name=models.RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=250000)
+                await Reward.create(type=RewardType.INVITE_FRIENDS, user_id=referrer.id, amount=250000)
 
 
 async def send_referral_mining_reward(extraction: int, referrer_id: int = None) -> None:
@@ -94,17 +91,18 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
     """
 
     # Если нет реферрера то не выполняем
+    print("mining refererer id" + str(referrer_id))
     if referrer_id is None:
         return
 
-    referrer_rw = await Reward.filter(user_id=referrer_id, type_name=models.RewardType.MINING_REFERRAL).first()
+    referrer_rw = await Reward.filter(user_id=referrer_id, type=RewardType.MINING_REFERRAL).first()
     income_5_perc = int(extraction * 0.05)
 
     if referrer_rw is not None:
         referrer_rw.amount += income_5_perc
         await referrer_rw.save()
     else:
-        await Reward.create(user_id=referrer_id, type_name=models.RewardType.MINING_REFERRAL, amount=income_5_perc)
+        await Reward.create(user_id=referrer_id, type=RewardType.MINING_REFERRAL, amount=income_5_perc)
 
     referrer_upper = await User.filter(id=referrer_id).first()
     referrer_upper_id = referrer_upper.referrer_id
@@ -113,14 +111,14 @@ async def send_referral_mining_reward(extraction: int, referrer_id: int = None) 
     if referrer_upper_id is None:
         return
 
-    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type_name=models.RewardType.MINING_REFERRAL).first()
+    referrer_upper_rw = await Reward.filter(user_id=referrer_upper_id, type=RewardType.MINING_REFERRAL).first()
     income_1_perc = int(extraction * 0.01)
 
     if referrer_upper_rw is not None:
         referrer_upper_rw.amount += income_1_perc
         await referrer_upper_rw.save()
     else:
-        await Reward.create(user_id=referrer_upper_id, type_name=models.RewardType.MINING_REFERRAL, amount=income_1_perc)
+        await Reward.create(user_id=referrer_upper_id, type=RewardType.MINING_REFERRAL, amount=income_1_perc)
 
 
 async def sync_energy(user: User) -> None:
@@ -144,11 +142,11 @@ async def sync_energy(user: User) -> None:
 
 
 async def check_task_visibility(task: Task, user: User):
-    if task.visibility.type == models.VisibilityType.RANK:
+    if task.visibility.type == VisibilityType.RANK:
         rank_visibility = await RankVisibility.get(visibility=task.visibility)
         return user.rank.league >= rank_visibility.rank.league
 
-    elif task.visibility.type == models.VisibilityType.ALLWAYS:
+    elif task.visibility.type == VisibilityType.ALLWAYS:
         return True
 
     return False

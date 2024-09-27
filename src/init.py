@@ -5,7 +5,7 @@ from tortoise import Tortoise
 from components.coders import UJsonCoder
 from config import REDIS_URL
 from models import Rank, RankName, Task, Condition, VisitLinkCondition, InstantReward, Visibility, \
-    RankVisibility, ConditionType, VisibilityType
+    RankVisibility, ConditionType, VisibilityType, User
 
 
 async def init_cache(enable: bool = True) -> None:

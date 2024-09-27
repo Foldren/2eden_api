@@ -1,5 +1,6 @@
 from starlette.requests import Request
-from starlette_admin import IntegerField, StringField, FloatField, DateTimeField, BooleanField, EnumField
+from starlette_admin import IntegerField, StringField, FloatField, DateTimeField, BooleanField, EnumField, ImageField, \
+    CountryField
 from models import RankName, RewardType, QuestionStatus
 from admin.tortoise_view import TortoiseModelView
 
@@ -30,7 +31,8 @@ class UserView(TortoiseModelView):
     fields = (
         IntegerField("id", label="Chat ID"),
         IntegerField("rank_id", label="RANK"),
-        StringField("country"),
+        StringField("username"),
+        CountryField("country"),
         StringField("referral_code")
     )
 

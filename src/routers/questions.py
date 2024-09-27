@@ -56,22 +56,22 @@ async def ask_question(question: str,
     return CustomJSONResponse(message="Я пошел думать над твоим вопросом.")
 
 
-@router.get(path="/status", description="Эндпойнт на проверку статуса вопроса к AI.")
+@router.get(path="/last_question", description="Эндпойнт на получение последнего сообщения со статусом вопроса к AI.")
 @cache(expire=30)
-async def get_status(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
+async def get_last_question(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
     """
-    Эндпойнт на проверку статуса вопроса к AI.
+    Эндпойнт на получение последнего сообщения со статусом вопроса к AI.
     @param init_data: данные юзера telegram
     @return:
     """
     user_id = init_data.user.id  # узнаем id юзера из Telegram-IniData
     last_question = await Question.filter(user_id=user_id).order_by("-id").first()
-    from_orm = await Question_Pydantic.from_tortoise_orm(last_question)
 
-    resp_data = {"question": from_orm.model_dump(mode='json')}
-
-    if not last_question:
+    if last_question is None:
         return CustomJSONResponse(message="Пользователь не задал ни одного вопроса.")
+
+    from_orm = await Question_Pydantic.from_tortoise_orm(last_question)
+    resp_data = from_orm.model_dump(mode='json')
 
     if last_question.status == QuestionStatus.HAVE_ANSWER:
         qst_reward = await Reward.filter(user_id=user_id, type=RewardType.AI_QUESTION).order_by("-id").first()
