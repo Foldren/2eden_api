@@ -1,3 +1,4 @@
+import base64
 from typing import Annotated
 from aiogram.utils.web_app import WebAppInitData
 from deep_translator import GoogleTranslator
@@ -30,7 +31,7 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
 
     from_orm = await User_Pydantic.from_tortoise_orm(user)
     user_dump = from_orm.model_dump(mode="json")  # Мод как решение проблемы с сериализацией даты
-    user_dump["avatar"] = str(user.avatar)
+    user_dump["base64_avatar"] = base64.b64encode(user.avatar).decode("utf-8")
 
     return CustomJSONResponse(data=user_dump, message="Выведены данные профиля.")
 
