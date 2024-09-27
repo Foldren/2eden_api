@@ -18,3 +18,4 @@ deep-translator==1.11.4
 better-profanity==0.7.0
 pyspellchecker==0.8.1
 pycountry==24.6.1
+Babel==2.16.0
