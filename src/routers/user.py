@@ -29,7 +29,8 @@ async def get_user_profile(init_data: Annotated[WebAppInitData, Depends(validate
     await sync_energy(user)  # синхронизируем энергию
 
     from_orm = await User_Pydantic.from_tortoise_orm(user)
-    user_dump = from_orm.model_dump(mode='json')  # Мод как решение проблемы с сериализацией даты
+    user_dump = from_orm.model_dump(mode="json")  # Мод как решение проблемы с сериализацией даты
+    user_dump["avatar"] = str(user.avatar)
 
     return CustomJSONResponse(data=user_dump, message="Выведены данные профиля.")
 

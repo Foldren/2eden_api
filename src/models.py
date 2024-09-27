@@ -83,7 +83,7 @@ class User(Model):
         return self.id
 
     class PydanticMeta:
-        exclude = ("rewards", "questions", "leader_place")
+        exclude = ("rewards", "questions", "leader_place", "avatar")
 
 
 class Activity(Model):
