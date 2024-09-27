@@ -77,10 +77,11 @@ async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegr
     
     user_tasks = await UserTask.filter(user=user).all()
     started_task_ids = {ut.task_id for ut in user_tasks if not ut.is_completed}
+    completed_task_ids = {ut.task_id for ut in user_tasks if ut.is_completed}
     
     filtered_tasks = []
     for task in all_tasks:
-        if await check_task_visibility(task, user):
+        if await check_task_visibility(task, user) and task.id not in completed_task_ids:
             condition_data = await get_condition_response(task)
             
             task_response = TaskResponse(

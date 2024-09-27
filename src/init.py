@@ -81,20 +81,39 @@ async def create_necessary_db_objects() -> None:
     tasks = await Task.all()
 
     if not tasks:
-        # Создаем условие для задачи
+        ranks = await Rank.all().order_by('league', 'press_force')[:5]  # Получаем первые 5 рангов
+        
+        for i, rank in enumerate(ranks, start=1):
+            # Создаем условие для задачи
+            condition_link = await Condition.create(type=ConditionType.VISIT_LINK)
+            await VisitLinkCondition.create(condition=condition_link, url='https://www.google.com')
+
+            # Создаем условие видимости для задачи
+            visibility = await Visibility.create(type=VisibilityType.RANK)
+            await RankVisibility.create(visibility=visibility, rank=rank)
+
+            # Создаем награду для задачи
+            reward = await InstantReward.create(tokens=1000 * i, inspirations=i, replenishments=i)
+
+            # Создаем задачу с условием
+            await Task.create(
+                description=f'Посети Google для ранга {rank.name} и получи награду!',
+                reward=reward,
+                condition=condition_link,
+                visibility=visibility
+            )
+
+        # Добавляем еще одну задачу (оригинальную)
         condition_link = await Condition.create(type=ConditionType.VISIT_LINK)
-        await VisitLinkCondition.create(condition=condition_link, url='https://www.google.com/search?q=2eden')
+        await VisitLinkCondition.create(condition=condition_link, url='https://www.google.com')
 
-        # Создаем условие видимости для задачи
         visibility = await Visibility.create(type=VisibilityType.RANK)
-        await RankVisibility.create(visibility=visibility, rank=await Rank.get(name=RankName.ACOLYTE))
+        await RankVisibility.create(visibility=visibility, rank=ranks[0])  # Для первого ранга
 
-        # Создаем награду для задачи
         reward = await InstantReward.create(tokens=1000)
 
-        # Создаем задачу с условием
         await Task.create(
-            description='Изучи информацию о нашем проекте и получи награду!',
+            description='Посети Google и получи награду!',
             reward=reward,
             condition=condition_link,
             visibility=visibility
