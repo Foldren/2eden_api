@@ -5,7 +5,8 @@ from pytz import timezone
 from tortoise import Model, Tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 from tortoise.fields import BigIntField, DateField, CharEnumField, CharField, DatetimeField, \
-    OnDelete, ForeignKeyField, OneToOneField, OneToOneRelation, ReverseRelation, FloatField, BooleanField, TextField
+    OnDelete, ForeignKeyField, OneToOneField, OneToOneRelation, ReverseRelation, FloatField, BooleanField, TextField, \
+    BinaryField
 
 
 # Enums ----------------------------------------------------------------------------------------------------------------
@@ -28,7 +29,7 @@ class RewardType(str, Enum):
     INVITE_FRIENDS = "invite_friends"
     LEADERBOARD = "leaderboard"
     TASK = "task"
-    MINING_REFERRAL = "referral"
+    MINING_REFERRAL = "mining_referral"
     AI_QUESTION = "ai_question"
 
 
@@ -75,12 +76,14 @@ class User(Model):
     leader_place: OneToOneRelation["Leader"]
     country = CharField(max_length=50)  # -
     referral_code = CharField(max_length=40, default=uuid4, unique=True)
+    username = CharField(max_length=50)
+    avatar = BinaryField(null=True)
 
     def __str__(self):
         return self.id
 
     class PydanticMeta:
-        exclude = ("rewards", "questions", "leader_place")
+        exclude = ("rewards", "questions", "leader_place", "avatar")
 
 
 class Activity(Model):
@@ -110,7 +113,7 @@ class Stats(Model):
 class Reward(Model):
     id = BigIntField(pk=True)
     user = ForeignKeyField(model_name="api.User", on_delete=OnDelete.CASCADE, related_name="rewards")
-    type = CharEnumField(enum_type=RewardType, default=RewardType.MINING_REFERRAL, description='Награда')
+    type = CharEnumField(enum_type=RewardType, description='Награда')
     amount = BigIntField(default=0)
     inspirations = BigIntField(default=0)
     replenishments = BigIntField(default=0)

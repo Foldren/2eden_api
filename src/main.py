@@ -8,7 +8,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from admin.auth import CustomAuthProvider
 from models import User, Rank, Stats, Activity, Reward, Question
-from routers import user, mining, rewarding, leaderboard, tasks, questions
+from routers import user, mining, rewarding, game_actions, tasks, questions
 from admin.views import UserView, RankView, ActivityView, RewardsView, StatsView, QuestionsView
 from config import TORTOISE_CONFIG, ADMIN_MW_SECRET_KEY, PSQL_CPUS
 from init import init
@@ -49,7 +49,7 @@ app.add_event_handler("startup", init)
 app.include_router(user.router, prefix="/api")
 app.include_router(mining.router, prefix="/api")
 app.include_router(rewarding.router, prefix="/api")
-app.include_router(leaderboard.router, prefix="/api")
+app.include_router(game_actions.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(questions.router, prefix="/api")
 

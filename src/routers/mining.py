@@ -37,8 +37,10 @@ async def start_mining(init_data: Annotated[WebAppInitData, Depends(validate_tel
     user.activity.is_active_mining = True
     await user.activity.save()
 
+    resp_data = {"max_extraction": user.rank.max_energy, "next_mining_dt": user.activity.next_mining}
+
     return CustomJSONResponse(message="Майнинг активирован.",
-                              data={"max_extraction": user.rank.max_energy},
+                              data=resp_data,
                               status_code=status.HTTP_202_ACCEPTED)
 
 
