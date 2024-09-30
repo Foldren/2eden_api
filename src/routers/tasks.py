@@ -1,113 +1,188 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, List, Union
 from aiogram.utils.web_app import WebAppInitData
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi_cache.decorator import cache
+from pydantic import BaseModel
 from pytz import timezone
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from components.responses import CustomJSONResponse
 from components.tools import check_task_visibility, validate_telegram_hash
-from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask, ConditionType, Tasks_Pydantic_List
+from models import User, Task, VisitLinkCondition, TgChannelCondition, UserTask, ConditionType
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
+class RewardResponse(BaseModel):
+    coins: int
+    inspirations: int
+    replenishments: int
 
-@router.get(path="/available", description="Метод для получения списка доступных задач.")
+class VisitLinkConditionResponse(BaseModel):
+    url: str
+
+class TgChannelConditionResponse(BaseModel):
+    channel_id: str
+
+class TaskResponse(BaseModel):
+    id: int
+    description: str
+    reward: RewardResponse
+    condition: Union[VisitLinkConditionResponse, TgChannelConditionResponse]
+    condition_type: ConditionType
+    is_started: bool = False
+
+class TaskListResponse(BaseModel):
+    tasks: List[TaskResponse]
+
+class UserStatsResponse(BaseModel):
+    coins: int
+    inspirations: int
+    replenishments: int
+
+class CompleteTaskResponse(BaseModel):
+    task_id: int
+    completion_time: str
+    reward: RewardResponse
+    user_stats: UserStatsResponse
+
+class StartTaskResponse(BaseModel):
+    task: TaskResponse
+
+async def get_condition_response(task: Task) -> Union[VisitLinkConditionResponse, TgChannelConditionResponse]:
+    """
+    Преобразует условие задачи в соответствующий ответ API.
+    :param task: объект задачи
+    :return: объект ответа с условием задачи
+    """
+    if task.condition.type == ConditionType.VISIT_LINK:
+        visit_link = await VisitLinkCondition.get(condition=task.condition)
+        return VisitLinkConditionResponse(url=visit_link.url)
+    elif task.condition.type == ConditionType.TG_CHANNEL:
+        tg_channel = await TgChannelCondition.get(condition=task.condition)
+        return TgChannelConditionResponse(channel_id=tg_channel.channel_id)
+    else:
+        raise ValueError(f"Неизвестный тип условия: {task.condition.type}")
+
+@router.get("/", response_model=TaskListResponse)
 @cache(expire=10)
-async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]) -> CustomJSONResponse:
+async def get_tasks(init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
     Метод для получения списка доступных задач.
     :param init_data: данные юзера telegram
     :return:
     """
-    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
-    user = await User.filter(id=user_chat_id).select_related("rank").first()
+    user = await User.filter(id=init_data.user.id).select_related("rank").first()
+    all_tasks = await Task.all().prefetch_related("reward", "condition")
+    
+    user_tasks = await UserTask.filter(user=user).all()
+    started_task_ids = {ut.task_id for ut in user_tasks if not ut.is_completed}
+    completed_task_ids = {ut.task_id for ut in user_tasks if ut.is_completed}
+    
+    filtered_tasks = []
+    for task in all_tasks:
+        if await check_task_visibility(task, user) and task.id not in completed_task_ids:
+            condition_data = await get_condition_response(task)
+            
+            task_response = TaskResponse(
+                id=task.id,
+                description=task.description,
+                reward=RewardResponse(
+                    coins=task.reward.tokens,
+                    inspirations=task.reward.inspirations,
+                    replenishments=task.reward.replenishments
+                ),
+                condition=condition_data,
+                condition_type=task.condition.type,
+                is_started=task.id in started_task_ids
+            )
+            filtered_tasks.append(task_response)
+    
+    return TaskListResponse(tasks=filtered_tasks)
 
-    # фильтрация по условию доступности
-    all_tasks = await Task.all()
-    filtered_tasks_id = [task.id for task in all_tasks if check_task_visibility(task, user)]
-    pydantic_tasks = await Tasks_Pydantic_List.from_queryset(Task.filter(id__in=filtered_tasks_id))
-    # по выполненным задачам не фильтруем
-    # todo: выводить более полезную информацию о задачах, а не просто айдишники
-    return CustomJSONResponse(data={"tasks": pydantic_tasks.model_dump(mode="json")})
-
-
-@router.post(path="/start/{task_id}", description="Метод для начала Таска. Создает для пользователя задачу для выполнения.")
-async def take_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
+@router.post("/{task_id}/start", response_model=StartTaskResponse)
+async def start_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
     Метод для начала Таска. Создает для пользователя задачу для выполнения.
     :param task_id: id задачи
     :param init_data: данные юзера telegram
     :return:
     """
-    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
-    user = await User.filter(id=user_chat_id).select_related("rank", "activity").first()
-
-    try:
-        task = await Task.get(id=task_id)
-    except DoesNotExist:
-        return CustomJSONResponse(message="Такой задачи не существует.",
-                                  status_code=status.HTTP_404_NOT_FOUND)
-
-    if not check_task_visibility(task, user):
-        return CustomJSONResponse(message="Задача недоступна.",
-                                  status_code=status.HTTP_423_LOCKED)
-
+    user = await User.filter(id=init_data.user.id).select_related("rank").first()
+    task = await Task.get_or_none(id=task_id).prefetch_related("reward", "condition")
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    
+    if not await check_task_visibility(task, user):
+        raise HTTPException(status_code=403, detail="Задача недоступна")
+    
     user_task, created = await UserTask.get_or_create(user=user, task=task)
     if not created:
-        return CustomJSONResponse(message="Задача уже взята.",
-                                  status_code=status.HTTP_409_CONFLICT)
+        raise HTTPException(status_code=400, detail="Задача уже взята")
+    
+    condition_data = await get_condition_response(task)
+    
+    task_response = TaskResponse(
+        id=task.id,
+        description=task.description,
+        reward=RewardResponse(
+            coins=task.reward.tokens,
+            inspirations=task.reward.inspirations,
+            replenishments=task.reward.replenishments
+        ),
+        condition=condition_data,
+        condition_type=task.condition.type,
+        is_started=True
+    )
+    
+    return StartTaskResponse(task=task_response)
 
-    return CustomJSONResponse(message="Задача взята.",
-                              data={"task": task},
-                              status_code=status.HTTP_201_CREATED)
-
-
-@router.post(path="/complete/{task_id}", description="Метод для завершения задачи. Отмечает задачу как выполненную.")
+@router.post("/{task_id}/complete", response_model=CompleteTaskResponse)
 async def complete_task(task_id: int, init_data: Annotated[WebAppInitData, Depends(validate_telegram_hash)]):
     """
-    Метод для завершения задачи. Отмечает задачу как выполненную.
+    Метод для завершения задачи. Отмечает задачу как выполненную и начисляет награду.
     :param task_id: id задачи
     :param init_data: данные юзера telegram
     :return:
     """
-    user_chat_id = init_data.user.id  # узнаем chat_id юзера из init_data
-    user = await User.filter(id=user_chat_id).select_related("rank", "activity", "stats").first()
-
-    try:
-        user_task = await UserTask.get(user=user, task_id=task_id).select_related("task__condition", "task__reward")
-    except DoesNotExist:
-        return CustomJSONResponse(message="Задача пользователя не найдена.",
-                                  status_code=status.HTTP_404_NOT_FOUND)
-
+    user = await User.filter(id=init_data.user.id).select_related("rank", "stats").first()
+    user_task = await UserTask.get_or_none(user=user, task_id=task_id).select_related("task__condition", "task__reward")
+    
+    if not user_task:
+        raise HTTPException(status_code=404, detail="Задача не найдена или не взята")
     if user_task.is_completed:
-        return CustomJSONResponse(message="Задача уже завершена.",
-                                  status_code=status.HTTP_409_CONFLICT)
+        raise HTTPException(status_code=400, detail="Задача уже завершена")
 
     task = user_task.task
-    condition = task.condition
+    
+    if task.condition.type == ConditionType.TG_CHANNEL:
+        # TODO: Реализовать проверку подписки на канал
+        raise HTTPException(status_code=501, detail="Проверка подписки на канал пока не реализована")
 
-    if condition.type == ConditionType.VISIT_LINK:
-        # Проверять условие посещения не нужно, т.к. это происходит на фронте
-        reach_condition = await VisitLinkCondition.get(condition=condition)
-        pass
-    elif condition.type == ConditionType.TG_CHANNEL:
-        tg_condition = await TgChannelCondition.get(condition=condition)
-        # todo: проверка подписки на канал
-        return CustomJSONResponse(message="Not implemented yet.",
-                                  status_code=status.HTTP_409_CONFLICT)
-
-    # Установка флага выполнения задания
+    # Отмечаем задачу как выполненную
     user_task.completed_time = datetime.now(tz=timezone("Europe/Moscow"))
-    # Начисление награды
+    await user_task.save()
+
+    # Начисляем награду
     user.stats.coins += task.reward.tokens
     user.stats.inspirations += task.reward.inspirations
     user.stats.replenishments += task.reward.replenishments
-    # Сохранение
-    await user_task.save()
     await user.stats.save()
 
-    return CustomJSONResponse(message="Задача завершена.",
-                              data={"task": task, "reward": task.reward},
-                              status_code=status.HTTP_202_ACCEPTED)
+    response_data = CompleteTaskResponse(
+        task_id=task.id,
+        completion_time=user_task.completed_time.isoformat(),
+        reward=RewardResponse(
+            coins=task.reward.tokens,
+            inspirations=task.reward.inspirations,
+            replenishments=task.reward.replenishments
+        ),
+        user_stats=UserStatsResponse(
+            coins=user.stats.coins,
+            inspirations=user.stats.inspirations,
+            replenishments=user.stats.replenishments
+        )
+    )
+
+    return response_data
