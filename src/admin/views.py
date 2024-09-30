@@ -32,7 +32,7 @@ class UserView(TortoiseModelView):
         IntegerField("id", label="Chat ID"),
         IntegerField("rank_id", label="RANK"),
         StringField("username"),
-        CountryField("country"),
+        StringField("country"),
         StringField("referral_code")
     )
 
